@@ -14,7 +14,7 @@ async function loadProgress() {
   done = new Set((data || []).map(r => r.lesson));
 }
 function nav() {
-  $("#nav").innerHTML = user ? `<a href="#/">课程</a><a href="#/videos">视频平台</a>
+  $("#nav").innerHTML = user ? `<a href="#/">课程</a><a href="#/tools/score">记分计算器</a><a href="#/videos">视频平台</a>
     <a href="#/password">${esc(user.user_metadata?.display || "账号")}</a><button class="link" id="out">退出</button>` : "";
   if (user) $("#out").onclick = async () => { await sb.auth.signOut(); };
 }
@@ -48,7 +48,7 @@ function lesson(id) {
   const l = LESSONS[i], p = LESSONS[i - 1], n = LESSONS[i + 1], d = done.has(id);
   $("#app").innerHTML = `<p><a href="#/">← 返回课程</a></p><h1>${esc(l.title)}</h1><p class="muted">${esc(l.summary)}</p>
   ${l.anim ? `<div class="card">${l.anim}</div>` : ""}<div class="card prose">${l.body}</div>
-  <div class="card"><h3>📺 精选视频（YouTube）</h3><div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt=""><span>${esc(v.t)}</span></a>`).join("")}</div>
+  ${l.videos.length ? "" : ""}<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt=""><span>${esc(v.t)}</span></a>`).join("")}</div>
   <p class="muted">YouTube 在中国大陆需自行解决访问问题；视频由搜索挑选，非本站原创。更多中文教学：</p>
   <ul class="links">${l.links.map(k => `<li><a href="${k.u}" target="_blank" rel="noopener noreferrer">${k.n}搜索</a> <span class="muted">${k.d}</span></li>`).join("")}</ul></div>
   <button class="btn ${d ? "gray" : ""}" id="mk">${d ? "已完成 ✓（点击取消）" : "标记为已学完"}</button>
@@ -68,10 +68,53 @@ function password() {
   $("#f").onsubmit = async e => { e.preventDefault(); const { error } = await sb.auth.updateUser({ password: new FormData(e.target).get("p") });
     const m = $("#msg"); m.textContent = error ? error.message : "密码已更新"; m.classList.remove("hide"); };
 }
+
+function calc() {
+  const sample = { par: [4,4,3,5,4,4,3,4,5, 4,3,4,5,4,4,3,4,5], si: [7,1,15,3,11,5,17,9,13, 8,16,2,4,12,6,18,10,14] };
+  let st; try { st = JSON.parse(localStorage.getItem("golfcalc")) } catch (e) {}
+  st = st || { idx: "", slope: 113, cr: "", hcp: "", par: sample.par, si: sample.si, g: Array(18).fill("") };
+  const holes = [...Array(18).keys()];
+  $("#app").innerHTML = `<h1>记分计算器</h1><p class="muted">输入差点和每洞数据，自动算出总杆、净杆、积分制分数。数据只保存在你的浏览器里。</p>
+  <div class="card calc"><h3>① 球场差点（WHS）</h3><div class="row">
+   <input id="idx" placeholder="差点指数 Index" value="${st.idx}"><input id="slope" placeholder="Slope（默认113）" value="${st.slope}">
+   <input id="cr" placeholder="Course Rating" value="${st.cr}"><input id="par" placeholder="全场 Par" value="${st.par.reduce((a, b) => a + b, 0)}" readonly></div>
+   <p>球场差点：<span class="hl" id="ch">—</span>　（= Index × Slope÷113 + (CR − Par)，四舍五入）</p>
+   <div class="row"><label>本场使用的让杆数（可手动改，如 95% 或比洞赛差）：<input id="hcp" style="width:90px" value="${st.hcp}"></label></div></div>
+  <div class="card calc" style="overflow:auto"><h3>② 逐洞记分</h3><table><tr><th>洞</th><th>Par</th><th>SI</th><th>让杆</th><th>杆数</th><th>净杆</th><th>积分</th></tr>
+  ${holes.map(i => `<tr><td>${i + 1}</td><td><input class="p" data-i="${i}" value="${st.par[i]}"></td><td><input class="s" data-i="${i}" value="${st.si[i]}"></td>
+   <td id="r${i}">0</td><td><input class="g" data-i="${i}" value="${st.g[i]}"></td><td id="n${i}">—</td><td id="b${i}">—</td></tr>`).join("")}</table>
+   <p>总杆 <span class="hl" id="tg">0</span>　净杆 <span class="hl" id="tn">0</span>　相对标准杆（净）<span class="hl" id="tv">0</span>　积分制 <span class="hl" id="tb">0</span> 分</p>
+   <p class="muted">积分：净 Par=2，Birdie=3，Eagle=4，Albatross=5，Bogey=1，双柏忌及更差=0。让杆按 SI 从小到大分配，超过 18 则第二轮继续。</p></div>
+  <button class="btn gray" id="rst">清空本场杆数</button>`;
+  const num = id => parseFloat($(id).value);
+  const recalc = () => {
+    const idx = num("#idx"), slope = num("#slope") || 113, cr = num("#cr");
+    const par = [...document.querySelectorAll(".p")].map(e => +e.value || 0), si = [...document.querySelectorAll(".s")].map(e => +e.value || 0);
+    const tp = par.reduce((a, b) => a + b, 0); $("#par").value = tp;
+    let ch = "—"; if (!isNaN(idx) && !isNaN(cr)) { ch = Math.round(idx * slope / 113 + (cr - tp)); }
+    $("#ch").textContent = ch;
+    let hcp = $("#hcp").value === "" ? (ch === "—" ? 0 : ch) : Math.round(num("#hcp")) || 0;
+    const g = [...document.querySelectorAll(".g")].map(e => e.value === "" ? null : +e.value);
+    let tg = 0, tn = 0, tb = 0, tv = 0;
+    holes.forEach(i => {
+      const base = Math.floor(hcp / 18), extra = hcp % 18, r = Math.max(0, base + (si[i] >= 1 && si[i] <= extra ? 1 : 0));
+      $("#r" + i).textContent = r;
+      if (g[i] == null) { $("#n" + i).textContent = "—"; $("#b" + i).textContent = "—"; return; }
+      const n = g[i] - r, d = n - par[i], b = Math.max(0, 2 - d);
+      tg += g[i]; tn += n; tv += d; tb += b; $("#n" + i).textContent = n; $("#b" + i).textContent = b;
+    });
+    $("#tg").textContent = tg; $("#tn").textContent = tn; $("#tv").textContent = (tv > 0 ? "+" : "") + tv; $("#tb").textContent = tb;
+    try { localStorage.setItem("golfcalc", JSON.stringify({ idx: $("#idx").value, slope: $("#slope").value, cr: $("#cr").value, hcp: $("#hcp").value, par, si, g: g.map(x => x ?? "") })); } catch (e) {}
+  };
+  document.querySelectorAll(".calc input").forEach(e => e.addEventListener("input", recalc));
+  $("#rst").onclick = () => { document.querySelectorAll(".g").forEach(e => e.value = ""); recalc(); };
+  recalc();
+}
+
 function route() {
   if (!user) return authView();
   const h = location.hash.replace(/^#\/?/, "");
-  if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "password") password(); else home();
+  if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "tools/score") calc(); else if (h === "password") password(); else home();
 }
 sb.auth.onAuthStateChange(async (_e, s) => {
   gotAuth = true;

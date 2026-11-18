@@ -1,6 +1,7 @@
 """把 content.py + videos.py 生成静态站 docs/（GitHub Pages 用）。运行：python build.py"""
 import json, os
-from content import LEVELS, PLATFORMS, ANIM, vlinks
+from content import PLATFORMS, ANIM, vlinks
+from curriculum import LEVELS
 from videos import V
 levels = []
 for lv in LEVELS:
