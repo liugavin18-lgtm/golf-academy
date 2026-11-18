@@ -1,0 +1,22 @@
+"""每节课挑选的 YouTube 视频（来自搜索结果，标题为原标题，内容未逐一核验）。"""
+V = {
+ "what-is-golf":[("I-BW6MBWX-Y","How Golf Actually Works"),("5oq6zoyrjtE","How To Count Scores In Golf for Beginner Golfers"),("2zYzPoh-i5U","How does golf scoring work? [Golf Scoring Terms Glossary]")],
+ "equipment":[("ZoSa9BgB8hU","What Golf Clubs Do Beginners ACTUALLY Need?"),("9XsO7Qu9EE4","14 Golf Clubs Explained - What To Use and When?"),("9_MmIjVazR0","Golf Clubs Explained in 5 Minutes (Beginner's Guide)")],
+ "grip":[("05n615HMdkQ","The ONLY Grip Tutorial You Need - Complete Beginner's Guide"),("hhnhHgvOaB0","How to Hold and Grip the Golf Club（Rick Shiels）"),("WAzRyyH1SOk","Master Your Golf Grip in 2 Minutes")],
+ "stance":[("fVcGKTd8AXM","Stance & Alignment: The Secret to Straight Shots"),("f2p_A_LADbA","Golf Stance and Ball Position For Beginners"),("bBiqaJdC45s","Golf Alignment Secrets: Pros Use This, So Should You!")],
+ "swing-basic":[("Txjm1TjageQ","How to swing a golf club: 5 steps for beginners"),("mElRrrsEWeI","The golf swing made simple (golf swing 101 for beginners)"),("1ubwG2itJGc","How to Swing a Golf Club for Beginners (4 Simple Keys)")],
+ "putting":[("_GpllcwMZXc","Putting for Beginners"),("JKdKKB-VxWE","How to Putt: The COMPLETE Putting Guide"),("IF60rHGGTyc","Indoor Putting Tips and Fundamentals")],
+ "chipping":[("l9iHIair-lw","Beginner's guide to chipping"),("6qOkdCSZ3ZQ","Easy Chipping Tutorial // Being Basic with Paige"),("HF_V8Q26qUo","SHORT GAME BASICS - 3 EASY GOLF LESSONS")],
+ "bunker":[("lRV0WYmwYMQ","Greenside Bunker 101 || Get Out With EASE!"),("niwLBsGXyUE","Bunker Shots Made Easy"),("gKmN6MUdbHM","GREENSIDE BUNKER SHOTS MADE SIMPLE")],
+ "ball-flight":[("N6X8bgHziLs","Instantly Fix Your Slice with This Simple Setup"),("miXs_Oj_BzM","Why 90% of Golfers DON'T Hit Driver Straight..."),("bkC_dubEvzA","Golf Lessons: How To Fix A Slice")],
+ "etiquette":[("8f3b7LmX578","3 Beginner Golf Rules & Etiquette Every New Golfer Must Know!"),("qNkvdxsMduc","Golf Etiquette Explained Like You're 10"),("A0kMxwRRG9Q","Golf Etiquette Pace of Play for Beginner Golfers")],
+ "rules":[("qyoeL_pMJzI","Think you know the Rules of Golf?（R&A 官方速览）"),("pgtl2O7ADGY","Golf Rules For Beginners: The 6 You Actually Need To Know!"),("_seQNiaB_-c","Every Golf Rule For Beginners Explained")],
+ "course-know":[("9v3R86sBtwE","Learn About the Different Parts of a Golf Course"),("ypjg_i0zmpc","Basics with Bernhard: Parts of the Golf Course"),("kv1J5MWGpWo","Surfaces on a golf course - The golf course explained!")],
+ "first-round":[("A-Fjl8ST_Uo","How I Play Golf as a Beginner"),("yVCcRux-Upo","Never Played on a Golf Course Before? Start Here!"),("fBxaec8M88I","The Golf Video Every Beginner Should Watch First!")],
+ "course-strategy":[("wZv-ZFjYEjE","Adjust, Avoid, Allow: A Smarter Strategy for Your Next Round"),("pUZSdEU93FQ","Course Management 101: Think Like a Scratch Player"),("X747Id9d6o8","Mastering Golf Course Management: Top 5 Tips to Score Lower!")],
+ "practice-plan":[("8K04Nyx3nfQ","SIMPLE but EFFECTIVE Driving Range Routine"),("qB6ekaphqbs","YOUR COMPLETE RANGE SESSION + Drills"),("W-nm8xfQAiI","Your Ultimate Driving Range Session")],
+ "drills":[("v8YsC8_1Mlw","3 DRILLS FOR BEGINNER GOLFERS"),("LFBIj7KsTZM","New to Golf? These 3 Drills Will Get You Started Fast"),("E-NK6J0udAY","How I Warm Up for a Round of Golf")],
+ "shotshaping":[("Dw6u96PKda0","How to Shape Golf Shots (Draw vs Fade - Golf Swing Basics)"),("DtFcRWYLpWQ","The 4 Golf Shot Shapes Every Golfer Should Know"),("RlGox6oG3fY","Quick & Easy Golf Shot Shaping")],
+ "short-game-adv":[("jpN1VuiAwPc","Wedge Distance Control Made Easy [3 Simple Drills]"),("EFvbKU0TFaA","Dial In Your Wedge Distances With This Simple System"),("vGTTNs_c1as","Pitching Made Simple! Hit Perfect Wedge Shots Every Time")],
+ "mental":[("_NDC1Slo5Ig","Golf Psychology - Pre Shot Routine / Golf's Mental Game"),("F8vXIr5zgVE","Golf Pre Shot Routine: The Mental Game"),("3VE1lhvOrNg","Golf Mental Game: The Power of Imagery")],
+}

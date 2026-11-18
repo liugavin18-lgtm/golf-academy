@@ -1,0 +1,3 @@
+// Supabase 的公开配置（anon key 设计上就是公开的，安全靠数据库行级权限 RLS）
+window.SUPABASE_URL = "https://terdvoufgjxokhkkfeek.supabase.co";
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlcmR2b3VmZ2p4b2toa2tmZWVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTQxMzgsImV4cCI6MjExMDU5MDEzOH0.anWeGb__HdmCKp0PdLfvMbpRrcsthtQ9tHCyXtwu9uA";
