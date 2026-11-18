@@ -1,7 +1,11 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LESSONS = LEVELS.flatMap(l => l.lessons);
+const fail = t => { $("#app").innerHTML = `<div class="card narrow"><h1>暂时连接不上</h1><p>${t}</p><p class="muted">可以换 Wi-Fi/移动网络再试，或稍后刷新。</p></div>`; };
+if (typeof supabase === "undefined") { fail("页面脚本没有加载成功。"); throw new Error("supabase-js missing"); }
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let gotAuth = false;
+setTimeout(() => { if (!gotAuth) fail("无法连接到登录服务器（Supabase）。"); }, 10000);
 let user = null, done = new Set(), mode = "login";
 const mail = u => u.toLowerCase() + "@golf-academy.app";   // 用户名映射成内部邮箱，不会发邮件
 
@@ -70,6 +74,7 @@ function route() {
   if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "password") password(); else home();
 }
 sb.auth.onAuthStateChange(async (_e, s) => {
+  gotAuth = true;
   user = s?.user || null; if (user) await loadProgress(); nav(); route();
 });
 window.addEventListener("hashchange", route);
