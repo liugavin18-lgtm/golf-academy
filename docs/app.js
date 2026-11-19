@@ -115,13 +115,15 @@ function calc() {
 /* ---------- 搜索与术语表 ---------- */
 const strip = h => h.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 const LTEXT = LESSONS.map(l => { const t = strip(l.title + " " + l.summary + " " + l.body); return { l, t, tl: t.toLowerCase() }; });
+// 短英文词（≤3 个字母/数字，如 OB、GIR、SI）要求整词匹配，避免 ob 命中 lob
+const has = (hay, w) => (/^[a-z0-9&]{1,3}$/.test(w) ? new RegExp("(^|[^a-z0-9])" + w.replace(/&/g, "\\&") + "($|[^a-z0-9])").test(hay) : hay.includes(w));
 const lessonById = id => LESSONS.find(l => l.id === id);
 function searchGlossary(q) {
   const ws = q.toLowerCase().split(/\s+/).filter(Boolean); if (!ws.length) return [];
   const full = q.toLowerCase().trim();
   return GLOSSARY.map(g => {
     const hay = (g.cn + " " + g.en + " " + g.al + " " + g.d).toLowerCase();
-    if (!ws.every(w => hay.includes(w))) return null;
+    if (!ws.every(w => has(hay, w))) return null;
     const cn = g.cn.toLowerCase(), en = g.en.toLowerCase(), al = g.al.toLowerCase();
     const s = (cn === full || en === full) ? 100 : (cn.includes(full) || en.includes(full)) ? 60 : al.includes(full) ? 40 : ws.some(w => cn.includes(w) || en.includes(w)) ? 30 : 10;
     return { g, s };
@@ -130,7 +132,7 @@ function searchGlossary(q) {
 function searchLessons(q) {
   const ws = q.toLowerCase().split(/\s+/).filter(Boolean); if (!ws.length) return [];
   return LTEXT.map(x => {
-    if (!ws.every(w => x.tl.includes(w))) return null;
+    if (!ws.every(w => has(x.tl, w))) return null;
     const title = x.l.title.toLowerCase(); let s = 0;
     ws.forEach(w => { if (title.includes(w)) s += 50; if (x.l.summary.toLowerCase().includes(w)) s += 20; s += Math.min(10, x.tl.split(w).length - 1); });
     const i = x.tl.indexOf(ws[0]);
