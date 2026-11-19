@@ -1,4 +1,5 @@
 const $ = s => document.querySelector(s);
+const SHOW_VIDEOS = false;   // 视频暂时不做，以后再开：改为 true 即可恢复视频卡片和“视频平台”入口
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LESSONS = LEVELS.flatMap(l => l.lessons);
 const fail = t => { $("#app").innerHTML = `<div class="card narrow"><h1>暂时连接不上</h1><p>${t}</p><p class="muted">可以换 Wi-Fi/移动网络再试，或稍后刷新。</p></div>`; };
@@ -14,7 +15,7 @@ async function loadProgress() {
   done = new Set((data || []).map(r => r.lesson));
 }
 function nav() {
-  $("#nav").innerHTML = user ? `<form id="sf" class="sf" autocomplete="off"><input id="sq" placeholder="搜索名词或内容：差点、OB、slice…" aria-label="搜索"><div id="sug" class="sug hide"></div></form><a href="#/">课程</a><a href="#/faq">常见问答</a><a href="#/glossary">术语表</a><a href="#/tools/score">记分计算器</a><a href="#/videos">视频平台</a>
+  $("#nav").innerHTML = user ? `<form id="sf" class="sf" autocomplete="off"><input id="sq" placeholder="搜索名词或内容：差点、OB、slice…" aria-label="搜索"><div id="sug" class="sug hide"></div></form><a href="#/">课程</a><a href="#/faq">常见问答</a><a href="#/glossary">术语表</a><a href="#/tools/score">记分计算器</a>${SHOW_VIDEOS ? `<a href="#/videos">视频平台</a>` : ""}
     <a href="#/password">${esc(user.user_metadata?.display || "账号")}</a><button class="link" id="out">退出</button>` : "";
   if (user) { $("#out").onclick = async () => { await sb.auth.signOut(); }; initSearch(); }
 }
@@ -47,13 +48,13 @@ function lesson(id) {
   const i = LESSONS.findIndex(l => l.id === id); if (i < 0) return location.hash = "#/";
   const l = LESSONS[i], p = LESSONS[i - 1], n = LESSONS[i + 1], d = done.has(id);
   $("#app").innerHTML = `<p><a href="#/">← 返回课程</a></p><h1>${esc(l.title)}</h1><p class="muted">${esc(l.summary)}</p>
-  ${l.coach ? `<div class="card coach"><div class="cwrap"><img id="cimg" alt=""><img id="cimg2" alt=""></div><div class="ccap"><b id="cph"></b><span id="ctx"></span></div>${l.coach.note ? `<p class="muted" style="margin:4px 2px;font-size:13px">ℹ️ ${esc(l.coach.note)}</p>` : ""}<div class="cctl"><button id="cprev">◀</button><button id="cplay">⏸ 暂停</button><button id="cnext">▶</button><span id="cviews"></span></div><div class="cchips" id="cchips"></div><p class="muted" style="margin:8px 2px 0;font-size:12px">示范人物为 AI 生成的虚拟教练形象；动作姿势由挥杆平面骨架数据控制，可以逐帧查看。</p>${l.a3d ? `<details class="d3" id="d3"><summary class="muted">查看 3D 骨架动画（辅助：可暂停、拖动进度、旋转视角）</summary><div id="v3d"></div></details>` : ""}</div>` : (l.anim ? `<div class="card">${l.anim}</div>` : "")}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
-  ${l.videos.length ? "" : ""}<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" onerror="this.remove()"></div><span>${esc(v.t)}</span></a>`).join("")}</div>
+  ${l.coach ? `<div class="card coach"><div class="cwrap"><img id="cimg" alt=""><img id="cimg2" alt=""></div><div class="ccap"><b id="cph"></b><span id="ctx"></span></div>${l.coach.note ? `<p class="muted" style="margin:4px 2px;font-size:13px">ℹ️ ${esc(l.coach.note)}</p>` : ""}<div class="cctl"><button id="cprev">◀</button><button id="cplay">⏸ 暂停</button><button id="cnext">▶</button><span id="cviews"></span></div><div class="cchips" id="cchips"></div><p class="muted" style="margin:8px 2px 0;font-size:12px">示范人物为 AI 生成的虚拟教练形象；动作姿势由挥杆平面骨架数据控制，可以逐帧查看。</p>${l.a3d ? `<details class="d3" id="d3"><summary class="muted">查看 3D 骨架动画（辅助：可暂停、拖动进度、旋转视角）</summary><div id="v3d"></div></details>` : ""}</div>` : (l.a3d ? `<div class="card"><div id="v3d"></div><p class="muted" style="margin:6px 2px 0">3D 骨架动作演示：可以暂停、拖动进度、点阶段按钮逐帧看，切换正面/背面/俯视，鼠标拖动可旋转。</p></div>` : (l.anim ? `<div class="card">${l.anim}</div>` : ""))}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
+  ${SHOW_VIDEOS ? `<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" onerror="this.remove()"></div><span>${esc(v.t)}</span></a>`).join("")}</div>
   <p class="muted">YouTube 在中国大陆需自行解决访问问题；视频由搜索挑选，非本站原创。更多中文教学：</p>
-  <ul class="links">${l.links.map(k => `<li><a href="${k.u}" target="_blank" rel="noopener noreferrer">${k.n}搜索</a> <span class="muted">${k.d}</span></li>`).join("")}</ul></div>
+  <ul class="links">${l.links.map(k => `<li><a href="${k.u}" target="_blank" rel="noopener noreferrer">${k.n}搜索</a> <span class="muted">${k.d}</span></li>`).join("")}</ul></div>` : ""}
   <button class="btn ${d ? "gray" : ""}" id="mk">${d ? "已完成 ✓（点击取消）" : "标记为已学完"}</button>
   <p class="pager">${p ? `<a href="#/lesson/${p.id}">← ${esc(p.title)}</a>` : ""}${n ? `<a style="float:right" href="#/lesson/${n.id}">${esc(n.title)} →</a>` : ""}</p>`;
-  if (l.coach) coachInit(l);
+  if (l.coach) coachInit(l); else if (l.a3d) mount3d(l);
   $("#mk").onclick = async () => {
     if (d) await sb.from("progress").delete().eq("lesson", id); else await sb.from("progress").insert({ lesson: id });
     await loadProgress(); lesson(id);
@@ -205,6 +206,10 @@ function glossaryPage() {
 
 
 function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+async function mount3d(l) {
+  try { if (!window.THREE) await loadScript("three.min.js"); if (!window.GolfViewer) await loadScript("golf3d.js"); GolfViewer.mount($("#v3d"), l.a3d); }
+  catch (e) { const c = $("#v3d"); if (c) c.parentNode.innerHTML = l.anim || ""; }
+}
 function coachInit(l) {
   const c = l.coach, viewKeys = Object.keys(c.views); let view = viewKeys.includes("face") ? "face" : viewKeys[0], i = 0, playing = true, timer = null, top = 0;
   const imgs = [$("#cimg"), $("#cimg2")];
