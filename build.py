@@ -4,11 +4,14 @@ from content import PLATFORMS, ANIM, vlinks
 from curriculum import LEVELS
 from glossary import G
 from faq import F
+from animations import BY_LESSON
+from narration import N
 from videos import V
 levels = []
 for lv in LEVELS:
     levels.append(dict(id=lv["id"], name=lv["name"], desc=lv["desc"], lessons=[dict(
-        id=l["id"], title=l["title"], summary=l["summary"], body=l["body"], anim=l["anim"], minutes=l["minutes"],
+        id=l["id"], title=l["title"], summary=l["summary"], body=l["body"], anim=BY_LESSON.get(l["id"], l["anim"]),
+        audio=("audio/%s.m4a" % l["id"]) if os.path.exists("docs/audio/%s.m4a" % l["id"]) else "", script=N.get(l["id"], ""), minutes=l["minutes"],
         videos=[dict(id=i, t=t) for i, t in V.get(l["id"], [])],
         links=[dict(n=n, u=u, d=d) for n, u, d in (vlinks(l["kw"])[:1] + vlinks(l["kw"])[3:4])]) for l in lv["lessons"]]))
 os.makedirs("docs", exist_ok=True)

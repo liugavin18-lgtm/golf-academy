@@ -30,3 +30,4 @@ table{border-collapse:collapse;width:100%}th,td{padding:8px;border-bottom:1px so
 mark{background:#ffe58a;color:#222;border-radius:3px;padding:0 1px}.gl p{margin:.3em 0}
 .faq summary{cursor:pointer;list-style:none}.faq summary::-webkit-details-marker{display:none}.faq summary::before{content:"Q ";color:var(--g);font-weight:700}
 .faq .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--bd)}.faq .ans::before{content:"A ";color:#1a4f7a;font-weight:700}
+.audio summary{cursor:pointer;margin-top:6px}.audio p{line-height:1.8}
