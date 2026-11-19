@@ -47,13 +47,13 @@ function lesson(id) {
   const i = LESSONS.findIndex(l => l.id === id); if (i < 0) return location.hash = "#/";
   const l = LESSONS[i], p = LESSONS[i - 1], n = LESSONS[i + 1], d = done.has(id);
   $("#app").innerHTML = `<p><a href="#/">← 返回课程</a></p><h1>${esc(l.title)}</h1><p class="muted">${esc(l.summary)}</p>
-  ${l.a3d ? `<div class="card"><div id="v3d"></div><p class="muted" style="margin:6px 2px 0">可以暂停、拖动进度、点下面的阶段按钮逐帧看，也可以切换视角，用鼠标拖动旋转。</p></div>` : (l.anim ? `<div class="card">${l.anim}</div>` : "")}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
+  ${l.coach ? `<div class="card coach"><div class="cwrap"><img id="cimg" alt=""><img id="cimg2" alt=""></div><div class="ccap"><b id="cph"></b><span id="ctx"></span></div>${l.coach.note ? `<p class="muted" style="margin:4px 2px;font-size:13px">ℹ️ ${esc(l.coach.note)}</p>` : ""}<div class="cctl"><button id="cprev">◀</button><button id="cplay">⏸ 暂停</button><button id="cnext">▶</button><span id="cviews"></span></div><div class="cchips" id="cchips"></div><p class="muted" style="margin:8px 2px 0;font-size:12px">示范人物为 AI 生成的虚拟教练形象；动作姿势由挥杆平面骨架数据控制，可以逐帧查看。</p>${l.a3d ? `<details class="d3" id="d3"><summary class="muted">查看 3D 骨架动画（辅助：可暂停、拖动进度、旋转视角）</summary><div id="v3d"></div></details>` : ""}</div>` : (l.anim ? `<div class="card">${l.anim}</div>` : "")}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
   ${l.videos.length ? "" : ""}<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" onerror="this.remove()"></div><span>${esc(v.t)}</span></a>`).join("")}</div>
   <p class="muted">YouTube 在中国大陆需自行解决访问问题；视频由搜索挑选，非本站原创。更多中文教学：</p>
   <ul class="links">${l.links.map(k => `<li><a href="${k.u}" target="_blank" rel="noopener noreferrer">${k.n}搜索</a> <span class="muted">${k.d}</span></li>`).join("")}</ul></div>
   <button class="btn ${d ? "gray" : ""}" id="mk">${d ? "已完成 ✓（点击取消）" : "标记为已学完"}</button>
   <p class="pager">${p ? `<a href="#/lesson/${p.id}">← ${esc(p.title)}</a>` : ""}${n ? `<a style="float:right" href="#/lesson/${n.id}">${esc(n.title)} →</a>` : ""}</p>`;
-  if (l.a3d) { try { if (window.GolfViewer && window.THREE) GolfViewer.mount($("#v3d"), l.a3d); else throw 0; } catch (e) { $("#v3d").parentNode.innerHTML = l.anim || ""; } }
+  if (l.coach) coachInit(l);
   $("#mk").onclick = async () => {
     if (d) await sb.from("progress").delete().eq("lesson", id); else await sb.from("progress").insert({ lesson: id });
     await loadProgress(); lesson(id);
@@ -201,6 +201,34 @@ function glossaryPage() {
   $("#app").innerHTML = `<h1>术语表</h1><p class="muted">共 ${GLOSSARY.length} 个名词。上方搜索栏可以直接查。</p>
   <input id="gf" placeholder="在术语表里筛选…" style="margin:8px 0 12px"><div id="gl">${GLOSSARY.map(g => glossCard(g)).join("")}</div>`;
   $("#gf").oninput = e => { const q = e.target.value.trim(); $("#gl").innerHTML = (q ? searchGlossary(q) : GLOSSARY).map(g => glossCard(g, q)).join(""); };
+}
+
+
+function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+function coachInit(l) {
+  const c = l.coach, viewKeys = Object.keys(c.views); let view = viewKeys.includes("face") ? "face" : viewKeys[0], i = 0, playing = true, timer = null, top = 0;
+  const imgs = [$("#cimg"), $("#cimg2")];
+  const VN = { face: "正面", dtl: "背面" };
+  $("#cviews").innerHTML = viewKeys.length > 1 ? viewKeys.map(k => `<button data-v="${k}" class="${k === view ? "on" : ""}">${VN[k]}视角</button>`).join("") : "";
+  $("#cchips").innerHTML = c.steps.map((s, k) => `<button data-i="${k}">${esc(s.l)}</button>`).join("");
+  function show(k) {
+    const arr = c.views[view]; i = ((k % arr.length) + arr.length) % arr.length;
+    const cur = imgs[top], nxt = imgs[top ^ 1]; nxt.onload = () => { nxt.classList.add("show"); cur.classList.remove("show"); top ^= 1; }; nxt.src = arr[i];
+    $("#cph").textContent = c.steps[i].l + "　"; $("#ctx").textContent = c.steps[i].n;
+    document.querySelectorAll("#cchips button").forEach((b, n) => b.classList.toggle("on", n === i));
+  }
+  function stop() { playing = false; $("#cplay").textContent = "▶ 播放"; clearInterval(timer); }
+  function tick() { clearInterval(timer); if (playing) timer = setInterval(() => { if (!document.body.contains($("#cimg"))) return clearInterval(timer); show(i + 1); }, 1800); }
+  $("#cprev").onclick = () => { stop(); show(i - 1); };
+  $("#cnext").onclick = () => { stop(); show(i + 1); };
+  $("#cplay").onclick = () => { playing = !playing; $("#cplay").textContent = playing ? "⏸ 暂停" : "▶ 播放"; tick(); };
+  $("#cchips").onclick = e => { const b = e.target.closest("button"); if (!b) return; stop(); show(+b.dataset.i); };
+  $("#cviews").onclick = e => { const b = e.target.closest("button"); if (!b) return; view = b.dataset.v; document.querySelectorAll("#cviews button").forEach(x => x.classList.toggle("on", x === b)); show(i); };
+  imgs[0].classList.add("show"); imgs[0].src = c.views[view][0]; $("#cph").textContent = c.steps[0].l + "　"; $("#ctx").textContent = c.steps[0].n; document.querySelectorAll("#cchips button")[0].classList.add("on"); tick();
+  const d3 = $("#d3"); if (d3) d3.addEventListener("toggle", async () => {
+    if (!d3.open || d3.dataset.done) return; d3.dataset.done = 1;
+    try { if (!window.THREE) await loadScript("three.min.js"); if (!window.GolfViewer) await loadScript("golf3d.js"); GolfViewer.mount($("#v3d"), l.a3d); } catch (e) { $("#v3d").textContent = "3D 加载失败。"; }
+  });
 }
 
 function route() {

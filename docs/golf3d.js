@@ -171,7 +171,7 @@
     }
     limb(r, color) { const g = new T.Group(); const cyl = new T.Mesh(new T.CylinderGeometry(r, r, 1, 14), new T.MeshStandardMaterial({ color, roughness: 0.7 })); cyl.castShadow = true; g.add(cyl);
       const s1 = new T.Mesh(new T.SphereGeometry(r, 14, 10), cyl.material), s2 = s1.clone(); s1.castShadow = s2.castShadow = true; g.add(s1, s2); g.cyl = cyl; g.s1 = s1; g.s2 = s2; this.scene.add(g); return g; }
-    setLimb(g, a, b) { const d = b.clone().sub(a), l = d.length() || 1e-4; g.cyl.scale.set(1, l, 1); g.cyl.position.copy(a.clone().add(b).multiplyScalar(0.5));
+    setLimb(g, a, b) { const d = b.clone().sub(a), l = d.length() || 1e-4; const k = g.k || 1; g.cyl.scale.set(k, l, k); g.s1.scale.setScalar(k); g.s2.scale.setScalar(k); g.cyl.position.copy(a.clone().add(b).multiplyScalar(0.5));
       g.cyl.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); g.s1.position.copy(a); g.s2.position.copy(b); }
     ell(rx, ry, rz, color) { const m = new T.Mesh(new T.SphereGeometry(1, 20, 14), new T.MeshStandardMaterial({ color, roughness: 0.75 })); m.scale.set(rx, ry, rz); m.castShadow = true; this.scene.add(m); return m; }
     buildBody() {
@@ -319,7 +319,7 @@
       const cv = this.r.domElement; cv.onpointerdown = e => { this.drag = { x: e.clientX, y: e.clientY, yaw: this.yaw, pitch: this.pitch }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; };
       cv.onpointermove = e => { if (!this.drag) return; this.yaw = this.drag.yaw - (e.clientX - this.drag.x) * 0.006; this.pitch = Math.max(-0.7, Math.min(0.7, this.drag.pitch + (e.clientY - this.drag.y) * 0.004)); if (!this.playing) this.render(); };
       cv.onpointerup = () => { this.drag = null; cv.style.cursor = "grab"; };
-      if (window.ResizeObserver) new ResizeObserver(() => { const w = this.cv.clientWidth; if (!w) return; const h = Math.round(w * 0.62); this.r.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.render(); }).observe(this.cv);
+      if (window.ResizeObserver) new ResizeObserver(() => { if (this.fixed) return; const w = this.cv.clientWidth; if (!w) return; const h = Math.round(w * 0.62); this.r.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.render(); }).observe(this.cv);
     }
     loop(now) {
       if (this.dead || !document.body.contains(this.el)) return; const dt = Math.min((now - this.last) / 1000, 0.1); this.last = now;

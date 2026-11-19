@@ -6,6 +6,8 @@
 import os, subprocess, sys, tempfile, time
 from pathlib import Path
 from narration import N
+from narration2 import N2
+N.update(N2)
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "docs" / "audio"
 TTS_HOME = Path(os.environ.get("TTS_HOME", "~/tts")).expanduser()
