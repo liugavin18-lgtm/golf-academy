@@ -14,7 +14,7 @@ async function loadProgress() {
   done = new Set((data || []).map(r => r.lesson));
 }
 function nav() {
-  $("#nav").innerHTML = user ? `<form id="sf" class="sf" autocomplete="off"><input id="sq" placeholder="搜索名词或内容：差点、OB、slice…" aria-label="搜索"><div id="sug" class="sug hide"></div></form><a href="#/">课程</a><a href="#/glossary">术语表</a><a href="#/tools/score">记分计算器</a><a href="#/videos">视频平台</a>
+  $("#nav").innerHTML = user ? `<form id="sf" class="sf" autocomplete="off"><input id="sq" placeholder="搜索名词或内容：差点、OB、slice…" aria-label="搜索"><div id="sug" class="sug hide"></div></form><a href="#/">课程</a><a href="#/faq">常见问答</a><a href="#/glossary">术语表</a><a href="#/tools/score">记分计算器</a><a href="#/videos">视频平台</a>
     <a href="#/password">${esc(user.user_metadata?.display || "账号")}</a><button class="link" id="out">退出</button>` : "";
   if (user) { $("#out").onclick = async () => { await sb.auth.signOut(); }; initSearch(); }
 }
@@ -150,8 +150,8 @@ function initSearch() {
   const hideSug = () => sug.classList.add("hide");
   inp.addEventListener("input", () => {
     const q = inp.value.trim(); if (!q) return hideSug();
-    const r = searchGlossary(q).slice(0, 6);
-    sug.innerHTML = r.map(g => `<a href="#/search/${encodeURIComponent(g.cn)}"><b>${esc(g.cn)}</b> <span class="muted">${esc(g.en)}</span><br><span class="muted">${esc(g.d.slice(0, 40))}…</span></a>`).join("") +
+    const r = searchGlossary(q).slice(0, 5), rf = searchFaq(q).slice(0, 3);
+    sug.innerHTML = rf.map(f => `<a href="#/search/${encodeURIComponent(q)}"><b>问：${esc(f.q)}</b></a>`).join("") + r.map(g => `<a href="#/search/${encodeURIComponent(g.cn)}"><b>${esc(g.cn)}</b> <span class="muted">${esc(g.en)}</span><br><span class="muted">${esc(g.d.slice(0, 40))}…</span></a>`).join("") +
       `<a href="#/search/${encodeURIComponent(q)}" class="all">搜索“${esc(q)}”的全部结果 →</a>`;
     sug.classList.remove("hide");
   });
@@ -164,13 +164,37 @@ function glossCard(g, q) {
   return `<div class="card gl"><b>${q ? mark(g.cn, q) : esc(g.cn)}</b> <span class="tag">${q ? mark(g.en, q) : esc(g.en)}</span>
     <p>${q ? mark(g.d, q) : esc(g.d)}</p>${ls ? `<a href="#/lesson/${ls.id}">相关课程：${esc(ls.title)} →</a>` : ""}</div>`;
 }
+
+function searchFaq(q) {
+  const ws = q.toLowerCase().split(/\s+/).filter(Boolean); if (!ws.length) return [];
+  return FAQ.map(f => {
+    const hay = (f.q + " " + f.k + " " + strip(f.a)).toLowerCase();
+    if (!ws.every(w => has(hay, w))) return null;
+    const ql = f.q.toLowerCase(); let s = 0;
+    ws.forEach(w => { if (ql.includes(w)) s += 50; if (f.k.toLowerCase().includes(w)) s += 20; s += 5; });
+    return { f, s };
+  }).filter(Boolean).sort((a, b) => b.s - a.s).map(x => x.f);
+}
+function faqCard(f, q, open) {
+  const ls = lessonById(f.l);
+  return `<details class="card faq"${open ? " open" : ""}><summary><b>${q ? mark(f.q, q) : esc(f.q)}</b></summary><div class="ans">${f.a}${ls ? `<p><a href="#/lesson/${ls.id}">想系统了解：${esc(ls.title)} →</a></p>` : ""}</div></details>`;
+}
+function faqPage() {
+  const cats = [...new Set(FAQ.map(f => f.c))];
+  $("#app").innerHTML = `<h1>常见问答</h1><p class="muted">共 ${FAQ.length} 个新手高频问题。问题来自新手社区与教学站的常见提问，答案按 2023 版规则和教练经验编写；论坛原帖没有直接引用。规则以官方为准，球场各有本地规定。</p>
+  <input id="ff" placeholder="在问答里筛选，如：OB、差点、费用…" style="margin:8px 0 12px"><div id="fl">${cats.map(c => `<h2>${c}</h2>` + FAQ.filter(f => f.c === c).map(f => faqCard(f)).join("")).join("")}</div>`;
+  $("#ff").oninput = e => { const q = e.target.value.trim(); $("#fl").innerHTML = q ? (searchFaq(q).map(f => faqCard(f, q, true)).join("") || '<p class="muted">没有匹配的问题。</p>')
+    : cats.map(c => `<h2>${c}</h2>` + FAQ.filter(f => f.c === c).map(f => faqCard(f)).join("")).join(""); };
+}
+
 function searchPage(q) {
   const inp = $("#sq"); if (inp && document.activeElement !== inp) inp.value = q;
-  const g = searchGlossary(q), l = searchLessons(q);
+  const g = searchGlossary(q), l = searchLessons(q), fq = searchFaq(q);
   $("#app").innerHTML = `<h1>搜索：${esc(q)}</h1>
+  <h2>常见问答 <span class="tag">${fq.length}</span></h2>${fq.length ? fq.slice(0, 8).map((f, i) => faqCard(f, q, i < 2)).join("") : '<p class="muted">没有匹配的问答。</p>'}
   <h2>名词解释 <span class="tag">${g.length}</span></h2>${g.length ? g.map(x => glossCard(x, q)).join("") : '<p class="muted">没有匹配的名词。</p>'}
   <h2>课程内容 <span class="tag">${l.length}</span></h2>${l.length ? l.slice(0, 20).map(x => `<a class="card lesson" href="#/lesson/${x.l.id}"><b>${mark(x.l.title, q)}</b><span>${mark(x.snip, q)}</span></a>`).join("") : '<p class="muted">没有匹配的课程内容。</p>'}
-  ${!g.length && !l.length ? '<div class="card"><p>没找到“' + esc(q) + '”。可以换个说法（中文或英文都行），或者看看 <a href="#/glossary">完整术语表</a>。</p></div>' : ""}`;
+  ${!g.length && !l.length && !fq.length ? '<div class="card"><p>没找到“' + esc(q) + '”。可以换个说法（中文或英文都行），或者看看 <a href="#/glossary">完整术语表</a>。</p></div>' : ""}`;
 }
 function glossaryPage() {
   $("#app").innerHTML = `<h1>术语表</h1><p class="muted">共 ${GLOSSARY.length} 个名词。上方搜索栏可以直接查。</p>
@@ -181,7 +205,7 @@ function glossaryPage() {
 function route() {
   if (!user) return authView();
   const h = location.hash.replace(/^#\/?/, "");
-  if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "tools/score") calc(); else if (h.startsWith("search/")) searchPage(decodeURIComponent(h.slice(7))); else if (h === "glossary") glossaryPage(); else if (h === "password") password(); else home();
+  if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "tools/score") calc(); else if (h.startsWith("search/")) searchPage(decodeURIComponent(h.slice(7))); else if (h === "glossary") glossaryPage(); else if (h === "faq") faqPage(); else if (h === "password") password(); else home();
 }
 sb.auth.onAuthStateChange((_e, s) => {
   gotAuth = true;

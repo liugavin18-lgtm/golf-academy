@@ -3,6 +3,7 @@ import json, os
 from content import PLATFORMS, ANIM, vlinks
 from curriculum import LEVELS
 from glossary import G
+from faq import F
 from videos import V
 levels = []
 for lv in LEVELS:
@@ -12,5 +13,5 @@ for lv in LEVELS:
         links=[dict(n=n, u=u, d=d) for n, u, d in (vlinks(l["kw"])[:1] + vlinks(l["kw"])[3:4])]) for l in lv["lessons"]]))
 os.makedirs("docs", exist_ok=True)
 open("docs/data.js", "w").write("window.LEVELS=" + json.dumps(levels, ensure_ascii=False) +
-    ";\nwindow.GLOSSARY=" + json.dumps([dict(cn=a, en=e, d=d, al=al, l=l) for a, e, d, al, l in G], ensure_ascii=False) + ";\nwindow.PLATFORMS=" + json.dumps([dict(n=n, d=d) for n, _, d in PLATFORMS], ensure_ascii=False) + ";")
+    ";\nwindow.GLOSSARY=" + json.dumps([dict(cn=a, en=e, d=d, al=al, l=l) for a, e, d, al, l in G], ensure_ascii=False) + ";\nwindow.FAQ=" + json.dumps([dict(c=c, q=q, a=a, k=k, l=l) for c, q, a, k, l in F], ensure_ascii=False) + ";\nwindow.PLATFORMS=" + json.dumps([dict(n=n, d=d) for n, _, d in PLATFORMS], ensure_ascii=False) + ";")
 print("lessons:", sum(len(l["lessons"]) for l in levels))
