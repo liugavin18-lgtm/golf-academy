@@ -14,9 +14,9 @@ async function loadProgress() {
   done = new Set((data || []).map(r => r.lesson));
 }
 function nav() {
-  $("#nav").innerHTML = user ? `<a href="#/">课程</a><a href="#/tools/score">记分计算器</a><a href="#/videos">视频平台</a>
+  $("#nav").innerHTML = user ? `<form id="sf" class="sf" autocomplete="off"><input id="sq" placeholder="搜索名词或内容：差点、OB、slice…" aria-label="搜索"><div id="sug" class="sug hide"></div></form><a href="#/">课程</a><a href="#/glossary">术语表</a><a href="#/tools/score">记分计算器</a><a href="#/videos">视频平台</a>
     <a href="#/password">${esc(user.user_metadata?.display || "账号")}</a><button class="link" id="out">退出</button>` : "";
-  if (user) $("#out").onclick = async () => { await sb.auth.signOut(); };
+  if (user) { $("#out").onclick = async () => { await sb.auth.signOut(); }; initSearch(); }
 }
 function authView() {
   const reg = mode === "register";
@@ -111,10 +111,75 @@ function calc() {
   recalc();
 }
 
+
+/* ---------- 搜索与术语表 ---------- */
+const strip = h => h.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+const LTEXT = LESSONS.map(l => { const t = strip(l.title + " " + l.summary + " " + l.body); return { l, t, tl: t.toLowerCase() }; });
+const lessonById = id => LESSONS.find(l => l.id === id);
+function searchGlossary(q) {
+  const ws = q.toLowerCase().split(/\s+/).filter(Boolean); if (!ws.length) return [];
+  const full = q.toLowerCase().trim();
+  return GLOSSARY.map(g => {
+    const hay = (g.cn + " " + g.en + " " + g.al + " " + g.d).toLowerCase();
+    if (!ws.every(w => hay.includes(w))) return null;
+    const cn = g.cn.toLowerCase(), en = g.en.toLowerCase(), al = g.al.toLowerCase();
+    const s = (cn === full || en === full) ? 100 : (cn.includes(full) || en.includes(full)) ? 60 : al.includes(full) ? 40 : ws.some(w => cn.includes(w) || en.includes(w)) ? 30 : 10;
+    return { g, s };
+  }).filter(Boolean).sort((a, b) => b.s - a.s).map(x => x.g);
+}
+function searchLessons(q) {
+  const ws = q.toLowerCase().split(/\s+/).filter(Boolean); if (!ws.length) return [];
+  return LTEXT.map(x => {
+    if (!ws.every(w => x.tl.includes(w))) return null;
+    const title = x.l.title.toLowerCase(); let s = 0;
+    ws.forEach(w => { if (title.includes(w)) s += 50; if (x.l.summary.toLowerCase().includes(w)) s += 20; s += Math.min(10, x.tl.split(w).length - 1); });
+    const i = x.tl.indexOf(ws[0]);
+    const snip = x.t.slice(Math.max(0, i - 30), i + 90);
+    return { l: x.l, s, snip: (i > 30 ? "…" : "") + snip + "…" };
+  }).filter(Boolean).sort((a, b) => b.s - a.s);
+}
+function mark(text, q) {
+  let h = esc(text);
+  q.split(/\s+/).filter(Boolean).forEach(w => { try { h = h.replace(new RegExp("(" + esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi"), "<mark>$1</mark>"); } catch (e) {} });
+  return h;
+}
+function initSearch() {
+  const inp = $("#sq"), sug = $("#sug"), form = $("#sf"); if (!inp) return;
+  const hideSug = () => sug.classList.add("hide");
+  inp.addEventListener("input", () => {
+    const q = inp.value.trim(); if (!q) return hideSug();
+    const r = searchGlossary(q).slice(0, 6);
+    sug.innerHTML = r.map(g => `<a href="#/search/${encodeURIComponent(g.cn)}"><b>${esc(g.cn)}</b> <span class="muted">${esc(g.en)}</span><br><span class="muted">${esc(g.d.slice(0, 40))}…</span></a>`).join("") +
+      `<a href="#/search/${encodeURIComponent(q)}" class="all">搜索“${esc(q)}”的全部结果 →</a>`;
+    sug.classList.remove("hide");
+  });
+  sug.addEventListener("click", () => { hideSug(); });
+  document.addEventListener("click", e => { if (!form.contains(e.target)) hideSug(); });
+  form.onsubmit = e => { e.preventDefault(); const q = inp.value.trim(); hideSug(); if (q) location.hash = "#/search/" + encodeURIComponent(q); };
+}
+function glossCard(g, q) {
+  const ls = lessonById(g.l);
+  return `<div class="card gl"><b>${q ? mark(g.cn, q) : esc(g.cn)}</b> <span class="tag">${q ? mark(g.en, q) : esc(g.en)}</span>
+    <p>${q ? mark(g.d, q) : esc(g.d)}</p>${ls ? `<a href="#/lesson/${ls.id}">相关课程：${esc(ls.title)} →</a>` : ""}</div>`;
+}
+function searchPage(q) {
+  const inp = $("#sq"); if (inp && document.activeElement !== inp) inp.value = q;
+  const g = searchGlossary(q), l = searchLessons(q);
+  $("#app").innerHTML = `<h1>搜索：${esc(q)}</h1>
+  <h2>名词解释 <span class="tag">${g.length}</span></h2>${g.length ? g.map(x => glossCard(x, q)).join("") : '<p class="muted">没有匹配的名词。</p>'}
+  <h2>课程内容 <span class="tag">${l.length}</span></h2>${l.length ? l.slice(0, 20).map(x => `<a class="card lesson" href="#/lesson/${x.l.id}"><b>${mark(x.l.title, q)}</b><span>${mark(x.snip, q)}</span></a>`).join("") : '<p class="muted">没有匹配的课程内容。</p>'}
+  ${!g.length && !l.length ? '<div class="card"><p>没找到“' + esc(q) + '”。可以换个说法（中文或英文都行），或者看看 <a href="#/glossary">完整术语表</a>。</p></div>' : ""}`;
+}
+function glossaryPage() {
+  $("#app").innerHTML = `<h1>术语表</h1><p class="muted">共 ${GLOSSARY.length} 个名词。上方搜索栏可以直接查。</p>
+  <input id="gf" placeholder="在术语表里筛选…" style="margin:8px 0 12px"><div id="gl">${GLOSSARY.map(g => glossCard(g)).join("")}</div>`;
+  $("#gf").oninput = e => { const q = e.target.value.trim(); $("#gl").innerHTML = (q ? searchGlossary(q) : GLOSSARY).map(g => glossCard(g, q)).join(""); };
+}
+
 function route() {
   if (!user) return authView();
   const h = location.hash.replace(/^#\/?/, "");
-  if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "tools/score") calc(); else if (h === "password") password(); else home();
+  if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "tools/score") calc(); else if (h.startsWith("search/")) searchPage(decodeURIComponent(h.slice(7))); else if (h === "glossary") glossaryPage(); else if (h === "password") password(); else home();
 }
 sb.auth.onAuthStateChange((_e, s) => {
   gotAuth = true;
