@@ -76,14 +76,37 @@ LEVEL1 = dict(id="l1", name="第一阶段 · 入门与装备", desc="搞懂这�
 ])
 
 LEVEL2 = dict(id="l2", name="第二阶段 · 击球基础", desc="挥杆、铁杆、木杆、推切沙，打出可预测的球", lessons=[
- L("swing-basic", "完整挥杆：从准备到收杆", "先学会节奏与平衡，再追求速度",
- """<p>看上面的 3D 动作演示（可暂停、拖动、换视角），把挥杆拆成 <b>10 个关键位置</b>：</p>
-<ol><li><b>准备</b>：握杆、站姿、瞄准正确。</li><li><b>上杆到腰高</b>：杆身与地面平行，杆头指向<b>球线延长线外侧</b>，手臂和胸口一起转。</li><li><b>上杆顶点</b>：肩转约 <b>90°</b>，髋转约 45°，左臂较直，重心略偏右，<b>杆身大致与地面平行</b>。</li>
-<li><b>转换</b>：先把<b>重心移向左脚</b>，再由髋带动下杆。</li><li><b>下杆到腰高</b>：杆身再次与地面平行，手腕<b>保持角度</b>。</li><li><b>击球</b>：身体略前于球，<b>胸口朝向球</b>，重心约 <b>60% 在左脚</b>。</li><li><b>送杆</b>：杆头跟随向目标，手臂伸展。</li><li><b>收杆</b>：重心 90% 在左脚，右脚后跟抬起、胸口朝向目标，<b>平衡保持 3 秒</b>。</li></ol>""" +
- T("<b>手臂是传递，身体是动力。</b>新手最常见的问题是只用手臂“打”球。感觉上让<b>胸口带着手臂转</b>，击球点自然更稳。") +
- D("① 半挥杆（腰到腰）打 20 球，只求干净接触；② 脚并拢挥杆 10 次，练平衡；③ 录下正面和侧面视频，对着 8 个位置检查。") +
- W("上杆过程中身体往右晃动（sway）；下杆抬起身体（early extension）；收杆没站稳，往后倒。"),
- "高尔夫 挥杆 基础 慢动作 教学", "swing", 12),
+ L("swing-basic", "完整挥杆：P1–P10 标准分解", "按业内通用的 10 个位置，逐段看懂一次完整挥杆",
+ """<p>上面的 3D 演示按<b>真实时间</b>制作：<b>1 倍速 ≈ 真实挥杆（全程约 1.6 秒）</b>，建议用 0.25–0.5 倍速，或点下面的 P1–P10 按钮逐个位置看。左上角的数据面板会随动作显示肩转、髋转、前倾、重心和时间。</p>
+<table><tr><th>位置</th><th>标准定义</th><th>要点（数据来源见下方）</th></tr>
+<tr><td><b>P1</b> 准备</td><td>击球前的准备姿势</td><td>前倾约 35–45°；重心约 50:50；握杆、瞄准、站姿、姿势都到位</td></tr>
+<tr><td><b>P2</b> 上杆杆身平行</td><td>杆身与地面平行</td><td>杆头在手的正后方，杆面朝上；肩带着手臂转</td></tr>
+<tr><td><b>P3</b> 上杆手臂平行</td><td>左臂与地面平行</td><td>肩转约 70°、髋转约 30°；重心移向后脚</td></tr>
+<tr><td><b>P4</b> 杆顶</td><td>上杆的终点</td><td><b>肩转 90–100°、髋转约 45°</b>（肩转约为髋转的 2 倍）；重心约 <b>70–80% 在后脚</b>；杆身大致平行并指向目标</td></tr>
+<tr><td><b>P5</b> 下杆手臂平行</td><td>下杆中左臂再次与地面平行</td><td>髋先转、重心先移向前脚；手腕保持折叠</td></tr>
+<tr><td><b>P6</b> 下杆杆身平行</td><td>下杆中杆身再次与地面平行</td><td>髋已打开约 20°，肩还在后面（‘拉伸’）；杆头速度快速上升</td></tr>
+<tr><td><b>P7</b> 击球</td><td>杆头碰到球</td><td>重心约 <b>75–90% 在前脚</b>；髋打开约 30–35°；手略领先于球；头在球后</td></tr>
+<tr><td><b>P8</b> 送杆杆身平行</td><td>击球后杆身与地面平行</td><td>杆指向目标方向；手臂向目标伸展；头开始抬起</td></tr>
+<tr><td><b>P9</b> 送杆手臂平行</td><td>击球后左臂与地面平行</td><td>身体继续转，头转向目标</td></tr>
+<tr><td><b>P10</b> 收杆</td><td>挥杆结束</td><td>胸口朝向目标；重心几乎全在前脚；手在前耳旁；站稳</td></tr></table>
+<h3>节奏：上杆约 0.8 秒，下杆约 0.26 秒（≈ 3 : 1）</h3>
+<p>职业球手的上杆时间与下杆时间之比约为 <b>3 : 1</b>：Yale 的研究里一位职业球手上杆 724 毫秒、下杆 248 毫秒（约 2.9:1），TPI 的 3D 数据库统计 PGA 巡回赛球员用 Driver 上杆平均 0.847 秒、比值约 3.2:1。业余球手个例的比值常在 <b>1.9–2.4 : 1</b>，也就是‘转换太急’。</p>
+<h3>发力顺序：骨盆 → 胸廓 → 手臂 → 球杆</h3>
+<p>下杆时各部位依次达到最大转速：先是骨盆，然后胸廓，然后手臂，最后球杆。经验参考（精英球手）：骨盆超过 500°/秒、胸廓超过 700°/秒、手臂超过 1100°/秒、球杆约 2200°/秒。本站演示里：骨盆峰值约 561°/秒（0.94 秒）→ 胸廓约 676°/秒（1.01 秒）→ 球杆约 1563°/秒（1.06 秒，刚过击球）。</p>""" +
+ T("<b>手是传递，身体是动力。</b>新手最常见的问题是只用手臂‘打’球，或转换太急、肩膀先启动。先让重心和髋启动，手臂自然被带下来。") +
+ D("① 半挥杆（P2 到 P8）打 20 球，只求干净接触；② 脚并拢挥杆，测试平衡；③ 用手机从正面和背面录像，对照 P1–P10 检查，每次只改一个位置。") +
+ W("上杆身体向右晃（sway）；转换时肩膀先启动；击球时头跑到球前面；收杆没站稳。") +
+ """<details class="src"><summary><b>数据来源与可信度（点开看）</b></summary>
+<p><b>有文献或数据支撑的：</b></p><ul>
+<li>节奏约 3:1：<a href="https://arxiv.org/pdf/physics/0611291" target="_blank" rel="noopener noreferrer">Grober（Yale）《Towards a Biomechanical Understanding of Tempo in the Golf Swing》</a>；<a href="https://www.mytpi.com/articles/biomechanics/measuring-the-timing-of-the-golf-swing-from-video" target="_blank" rel="noopener noreferrer">TPI：Measuring the Timing of the Golf Swing</a></li>
+<li>杆顶胸廓转 90–100°、约为骨盆的 2 倍，更大的肩髋分离与更高球速相关：<a href="https://www.preprints.org/manuscript/202309.1774" target="_blank" rel="noopener noreferrer">职业球手 X-factor 研究（预印本）</a>；<a href="https://chs.uky.edu/sites/default/files/2023-12/Myers_2008_Role%20of%20upper%20torso%20and%20pelvis%20during%20golf%20swing.pdf" target="_blank" rel="noopener noreferrer">Myers 2008</a></li>
+<li>发力顺序（骨盆→胸廓→手臂→球杆）和峰值量级：<a href="https://www.k-motion.com/TPI-Kinematic-Sequence" target="_blank" rel="noopener noreferrer">K-Motion / TPI Kinematic Sequence</a>（商业机构给出的经验值，不同球手差异大）</li>
+<li>重心：杆顶约 70–80% 在后脚、击球约 75–90% 在前脚：<a href="https://www.jssm.org/jssm-09-127.xml-Fulltext" target="_blank" rel="noopener noreferrer">JSSM 力板研究</a>及教练文章汇总（不同研究数值有差异）</li>
+<li>准备姿势前倾 35–45°：<a href="https://golfworkoutprogram.com/spine-angle-in-golf-swing/" target="_blank" rel="noopener noreferrer">教练文章汇总</a></li></ul>
+<p><b>只有教练共识、我没找到精确量化文献的：</b>击球时髋打开约 30–35° 和肩接近方正、头在球后几厘米、击球后头抬起并转向目标。演示按这些共识制作，请以真实球手的慢动作视频为准再核对。</p>
+<p><b>关于 P1–P10：</b>这是教练圈通用的 10 个位置（<a href="https://hackmotion.com/golf-swing-positions/" target="_blank" rel="noopener noreferrer">HackMotion 整理</a>，据说由 Mac O'Grady 提出）。我没有找到 TPI 官方页面的原文定义，所以这里的“杆身平行/手臂平行”是按通行说法实现的。</p>
+<p><b>演示速度：</b>7 号铁击球时杆头约 25 米/秒（≈ 55 英里/小时），比职业水平（7 号铁约 35–40 米/秒）慢，是为了便于观察。</p></details>""",
+ "高尔夫 挥杆 P1 P10 标准 分解 教学", "swing", 12),
 
  L("tempo", "节奏与平衡：3:1 法则", "节奏对了，击球就稳了",
  """<p>职业球手的上杆与下杆时间比大约是 <b>3:1</b>：上杆用 3 拍，下杆 1 拍。业余球手的问题通常是<b>转换太急</b>，上杆一半就想击球。</p>

@@ -4,7 +4,7 @@
    α：0 = 准备；90 = 上杆腰高(杆水平、杆头在后)；180≈杆竖直；270 = 杆顶(杆指向目标)；负值 = 随挥/收杆。 */
 (function () {
   const T = THREE, V = (x, y, z) => new T.Vector3(x, y, z), D2R = Math.PI / 180;
-  const BODY = { upper: 0.30, fore: 0.28, thigh: 0.44, shin: 0.44, torso: 0.55, hipW: 0.20, shW: 0.39, ankleY: 0.07 };
+  const BODY = { upper: 0.31, fore: 0.35, thigh: 0.44, shin: 0.44, torso: 0.55, hipW: 0.20, shW: 0.39, ankleY: 0.07 };
 
   /* ---------- 数学辅助 ---------- */
   function ik2(a, target, l1, l2, pole) {
@@ -36,41 +36,41 @@
      hl/hu/hf 双手相对准备姿势的偏移（胸腔坐标：左/上/前）、a 球杆平面角、w 击球对准权重(1=杆头必须在球上)。 */
   const MOTIONS = {
     swing: {
-      name: "完整挥杆（7 号铁）", club: { len: 0.85, phi: 62, kind: "iron" }, tilt0: 32, dur: 3.6, impactT: 0.64, ballLift: 0.035,
+      name: "完整挥杆（7 号铁）· P1–P10", club: { len: 0.85, phi: 62, kind: "iron" }, tilt0: 38, dur: 1.6, topT: 0.4875, impactT: 0.65, ballLift: 0.035, tempoNote: "上杆 0.78 秒 : 下杆 0.26 秒 ≈ 3 : 1",
       keys: [
-        { t: 0.00, L: "1 准备", sh: 0, hipT: 0, shT: 0, tilt: 32, sb: 3, wt: 0.5, hl: 0, hu: 0, hf: 0, a: 3, w: 1 },
-        { t: 0.13, L: "2 上杆到腰高", sh: -0.01, hipT: 14, shT: 34, tilt: 32, sb: 3, wt: 0.46, hl: 0, hu: 0.16, hf: 0.08, a: 90, w: 0 },
-        { t: 0.25, L: "3 手臂平行", sh: -0.03, hipT: 28, shT: 66, tilt: 32, sb: 3.5, wt: 0.38, hl: -0.04, hu: 0.74, hf: 0.06, a: 150, w: 0 },
-        { t: 0.40, L: "4 杆顶", sh: -0.04, hipT: 42, shT: 94, tilt: 32, sb: 4, wt: 0.3, hl: -0.12, hu: 0.86, hf: -0.09, a: 266, w: 0 },
-        { t: 0.47, L: "5 转换", sh: -0.01, hipT: 28, shT: 86, tilt: 32, sb: 6, wt: 0.4, hl: -0.08, hu: 0.82, hf: -0.05, a: 262, w: 0 },
-        { t: 0.585, L: "6 下杆到腰高", sh: 0.04, hipT: 6, shT: 52, tilt: 33, sb: 11, wt: 0.62, hl: -0.02, hu: 0.24, hf: 0.11, a: 100, w: 0 },
-        { t: 0.64, L: "7 击球", sh: 0.08, hipT: -32, shT: -8, tilt: 33, sb: 15, wt: 0.78, hl: 0, hu: 0, hf: 0, a: 8, w: 1 },
-        { t: 0.72, L: "8 送杆", sh: 0.12, hipT: -50, shT: -42, tilt: 30, sb: 12, wt: 0.9, hl: 0, hu: 0.24, hf: 0.09, a: -108, w: 0 },
-        { t: 0.83, L: "9 随挥", sh: 0.17, hipT: -62, shT: -84, tilt: 24, sb: 6, wt: 0.95, hl: 0.05, hu: 0.56, hf: 0.01, a: -162, w: 0 },
-        { t: 0.95, L: "10 收杆", sh: 0.2, hipT: -72, shT: -108, tilt: 16, sb: 0, wt: 0.97, hl: 0, hu: 0.80, hf: -0.09, a: -232, w: 0 },
-        { t: 1.00, L: "10 收杆", sh: 0.2, hipT: -72, shT: -108, tilt: 16, sb: 0, wt: 0.97, hl: 0, hu: 0.80, hf: -0.09, a: -232, w: 0 },
+        { t: 0.0000, L: "P1 准备", sh: 0, hipT: 0, shT: 0, tilt: 38, sb: 3, wt: 0.5, hl: 0, hu: 0, hf: 0, a: 3, w: 0 },
+        { t: 0.1750, L: "P2 上杆杆身平行", sh: -0.01, hipT: 16, shT: 36, tilt: 38, sb: 3, wt: 0.45, hl: 0, hu: 0.16, hf: 0.08, a: 90, w: 0 },
+        { t: 0.3250, L: "P3 上杆手臂平行", sh: -0.03, hipT: 30, shT: 68, tilt: 38, sb: 3.5, wt: 0.37, hl: -0.04, hu: 0.44, hf: 0.06, a: 150, w: 0 },
+        { t: 0.4875, L: "P4 杆顶", sh: -0.04, hipT: 45, shT: 95, tilt: 38, sb: 4, wt: 0.3, hl: -0.12, hu: 0.86, hf: -0.09, a: 266, w: 0 },
+        { t: 0.5625, L: "P5 下杆手臂平行", sh: 0.01, hipT: 18, shT: 70, tilt: 38, sb: 7, wt: 0.5, hl: -0.06, hu: 0.46, hf: 0.1, a: 175, w: 0 },
+        { t: 0.6125, L: "P6 下杆杆身平行", sh: 0.06, hipT: -20, shT: 30, tilt: 38, sb: 12, wt: 0.66, hl: -0.02, hu: 0.24, hf: 0.11, a: 91, w: 0 },
+        { t: 0.6500, L: "P7 击球", sh: 0.08, hipT: -33, shT: -8, tilt: 38, sb: 15, wt: 0.78, hl: 0, hu: 0, hf: 0, a: 8, w: 0 },
+        { t: 0.6937, L: "P8 送杆杆身平行", sh: 0.11, hipT: -45, shT: -40, tilt: 37, sb: 13, wt: 0.86, hl: 0, hu: 0.24, hf: 0.09, a: -90, w: 0 },
+        { t: 0.7500, L: "P9 送杆手臂平行", sh: 0.15, hipT: -58, shT: -78, tilt: 33, sb: 8, wt: 0.92, hl: 0.05, hu: 0.42, hf: 0.01, a: -150, w: 0 },
+        { t: 0.9125, L: "P10 收杆", sh: 0.2, hipT: -72, shT: -108, tilt: 22, sb: 0, wt: 0.97, hl: 0, hu: 0.8, hf: -0.09, a: -232, w: 0 },
+        { t: 1.0000, L: "P10 收杆", sh: 0.2, hipT: -72, shT: -108, tilt: 22, sb: 0, wt: 0.97, hl: 0, hu: 0.8, hf: -0.09, a: -232, w: 0 },
       ],
       notes: {
-        "1 准备": "髋部前倾、背平直、膝微弯；双手自然下垂；球在站位中间偏前。",
-        "2 上杆到腰高": "杆身与地面平行，杆头在手的正后方；肩膀带着手臂一起转，不是单用手拿起来。",
-        "3 手臂平行": "左臂与地面平行，杆身几乎竖直；重心开始移向右脚内侧。",
-        "4 杆顶": "肩转约 90°，髋转约 45°；左臂较直，杆身大致与地面平行并指向目标。",
-        "5 转换": "先让下肢启动：重心移向左脚，髋先转，手臂和杆被‘拉’下来。",
-        "6 下杆到腰高": "杆身再次平行于地面；手腕保持角度；髋已经在转向目标。",
-        "7 击球": "髋打开约 30–35°，重心约六成在左脚；手略领先于球，杆头在草地上先碰球。",
-        "8 送杆": "手臂向目标伸展，胸口转向目标；杆头跟着球线送出去。",
-        "9 随挥": "身体继续转，重心几乎全在左脚；杆开始绕向身后。",
-        "10 收杆": "胸口朝向目标，重心 90% 在左脚，右脚跟抬起，保持平衡站稳 3 秒。",
+        "P1 准备": "髋部前倾、背平直、膝微弯；双手自然下垂；重心 50:50；球在站位中间偏前。",
+        "P2 上杆杆身平行": "杆身与地面平行，杆头在手的正后方、杆面朝上；肩膀带着手臂一起转，不是单用手拿起来。",
+        "P3 上杆手臂平行": "左臂与地面平行；肩转约 70°、髋转约 30°；重心逐渐移向后脚内侧。",
+        "P4 杆顶": "肩转约 90–100°、髋转约 45°（肩转约为髋转的两倍）；左臂较直；重心约 70–80% 在后脚；头基本不动。",
+        "P5 下杆手臂平行": "下杆由下肢先启动：重心已移向前脚、髋先转；手腕保持折叠角度，手臂随后被带下来。",
+        "P6 下杆杆身平行": "杆身再次与地面平行；髋已打开约 20°，肩膀还在后面，形成‘拉伸’；杆头速度快速上升。",
+        "P7 击球": "髋打开约 30–35°，肩接近方正；重心约 75–80% 在前脚；手略领先于球；杆头在最低点之前先碰球；头在球后。",
+        "P8 送杆杆身平行": "杆身再次平行于地面、指向目标方向；手臂向目标伸展，胸口转向目标；头开始抬起。",
+        "P9 送杆手臂平行": "左臂与地面平行；身体继续转，重心几乎全在前脚；头转向目标。",
+        "P10 收杆": "胸口朝向目标，重心 90% 以上在前脚，后脚跟抬起，手在前耳旁；保持平衡站稳 3 秒。",
       },
     },
     driver: {
-      name: "一号木开球", club: { len: 1.03, phi: 54, kind: "driver" }, tilt0: 28, dur: 3.8, impactT: 0.64, ballLift: 0.09, ballX: 0.0,
+      name: "一号木开球（P1–P10）", club: { len: 1.03, phi: 54, kind: "driver" }, tilt0: 35, dur: 1.65, topT: 0.4875, impactT: 0.65, ballLift: 0.09, ballX: 0.0, tempoNote: "上杆约 0.8 秒 : 下杆约 0.27 秒 ≈ 3 : 1",
       keys: null, base: "swing",
       tweak: { tiltAdj: -3, sh: -0.04, a: { 90: 92, 150: 154, 266: 274, "-232": -240 } },
       notes: null,
     },
     putt: {
-      name: "推杆（钟摆）", headFollow: 6, club: { len: 0.76, phi: 70, kind: "putter" }, tilt0: 42, dur: 3.2, impactT: 0.5, ballLift: 0.021, roll: true, stance: 0.13,
+      name: "推杆（钟摆）", headFollow: 6, club: { len: 0.76, phi: 70, kind: "putter" }, tilt0: 42, dur: 1.45, impactT: 0.5, ballLift: 0.021, roll: true, stance: 0.13,
       keys: [
         { t: 0.00, L: "1 准备", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
         { t: 0.25, L: "2 后摆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 7, hl: 0, hu: 0.0, hf: 0.0, a: 26, w: 0 },
@@ -87,7 +87,7 @@
       },
     },
     chip: {
-      name: "切杆 Chip", headFollow: 22, club: { len: 0.74, phi: 66, kind: "wedge" }, tilt0: 36, dur: 3.2, impactT: 0.52, ballLift: 0.021, roll: true, shiftBall: 0.12, runout: true, stance: 0.12,
+      name: "切杆 Chip", headFollow: 22, club: { len: 0.74, phi: 66, kind: "wedge" }, tilt0: 36, dur: 1.45, impactT: 0.52, ballLift: 0.021, roll: true, shiftBall: 0.12, runout: true, stance: 0.12,
       keys: [
         { t: 0.00, L: "1 准备", sh: 0.07, hipT: -10, shT: -6, tilt: 36, sb: 0, hl: 0, hu: 0, hf: 0, a: 4, w: 1 },
         { t: 0.30, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 36, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
@@ -104,7 +104,7 @@
       },
     },
     pitch: {
-      name: "高抛球 Pitch（9 点钟）", headFollow: 45, club: { len: 0.74, phi: 64, kind: "wedge" }, tilt0: 34, dur: 3.4, impactT: 0.55, ballLift: 0.021, shiftBall: 0.05, stance: 0.16,
+      name: "高抛球 Pitch（9 点钟）", headFollow: 45, club: { len: 0.74, phi: 64, kind: "wedge" }, tilt0: 34, dur: 1.55, impactT: 0.55, ballLift: 0.021, shiftBall: 0.05, stance: 0.16,
       keys: [
         { t: 0.00, L: "1 准备", sh: 0.04, hipT: -6, shT: -4, tilt: 34, sb: 2, hl: 0, hu: 0, hf: 0, a: 3, w: 1 },
         { t: 0.30, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 34, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
@@ -124,7 +124,7 @@
   // 复用：driver 在 swing 关键帧上微调
   (function () {
     const b = MOTIONS.swing, d = MOTIONS.driver;
-    d.keys = b.keys.map(k => Object.assign({}, k, { tilt: k.tilt + d.tweak.tiltAdj, sh: k.sh + (k.w ? 0 : d.tweak.sh * 0) }));
+    d.keys = b.keys.map(k => Object.assign({}, k, { tilt: k.tilt + d.tweak.tiltAdj }));
     d.notes = Object.assign({}, b.notes, { "1 准备": "球放在左脚内侧，站得更宽；球 tee 高度约半个球露在杆头上方。", "7 击球": "一号木在最低点之后、向上扫过球；重心约六成在左脚。" });
   })();
 
@@ -233,9 +233,9 @@
       const ballT = this.ballPos.clone(); const need = ballT.clone().sub(d.clone().multiplyScalar(Lc));
       const headErr = need.clone().sub(hand);
       if (!noSnap && this.impErr) { const g = Math.exp(-Math.pow((t - m.impactT) / 0.05, 2)); hand.add(this.impErr.clone().multiplyScalar(g)); }
-      // 手够不到肩时，整体向手靠近（避免手臂被拉长）
-      const reach = (B.upper + B.fore) * 0.985, dd = Lsh.distanceTo(hand);
-      if (dd > reach && !atRest) { const pull = hand.clone().sub(Lsh).normalize().multiplyScalar(dd - reach); P.add(V(pull.x, 0, pull.z)); Lsh.add(pull); Rsh.add(pull); N.add(pull); }
+      // 手够不到时：把手限制在手臂能伸到的范围内（不再把肩膀往上“拽”，否则头会跟着升高）
+      const reach = (B.upper + B.fore) * 0.985, dd = Lsh.distanceTo(hand); this._dd0 = dd;
+      if (dd > reach) { const dir = hand.clone().sub(Lsh).normalize(); hand.copy(Lsh).add(dir.multiplyScalar(reach)); }
       const head = hand.clone().add(d.clone().multiplyScalar(Lc));
       const handR = hand.clone().add(d.clone().multiplyScalar(0.11));
       // 手臂 IK（肘的指向：向下并略向外）
@@ -247,7 +247,7 @@
       const ankRt = (this.ankR || V(P.x - 0.19, 0.035, P.z)).clone(); ankRt.x += 0.17 * ep; ankRt.y += 0.075 * ep;
       const polK = V(0, 0, 1);
       const lg = { L: ik2(Lhip, this.ankL || V(P.x + 0.19, 0.035, P.z), B.thigh, B.shin, polK.clone().add(V(0.25, 0, 0))), R: ik2(Rhip, ankRt, B.thigh, B.shin, polK.clone().add(V(-0.25, 0, 0))) };
-      return { t, ep, ankRt, P, pelvis: P, N, Lsh, Rsh, cx, cy, cz, Lhip, Rhip, qChest, qHip, spineUp, hand, handR, head, d, al, aL, aR, lg, Lc, headErr, f, hx, hz };
+      return { t, dd0: dd, ep, ankRt, P, pelvis: P, N, Lsh, Rsh, cx, cy, cz, Lhip, Rhip, qChest, qHip, spineUp, hand, handR, head, d, al, aL, aR, lg, Lc, headErr, f, hx, hz };
     }
     calcH0() {
       // 由准备姿势：手在 y=杆头高度 + Lc·sinφ 处，用胸腔坐标求 (l,u,f)
@@ -269,7 +269,7 @@
       // 头部朝向：上杆时略向右转，击球时回到看球，击球后抬头并转向目标（头不再一直盯着球线）
       const sm = x => { x = Math.min(Math.max(x, 0), 1); return x * x * (3 - 2 * x); }, ti = this.m.impactT, ff = this.m.headFollow != null ? this.m.headFollow : 78, tp = s.t;
       let yaw, pit = 0;
-      if (tp < 0.4 * ti / 0.64) yaw = -12 * sm(tp / (0.4 * ti / 0.64)); else if (tp < ti) yaw = -12 * (1 - sm((tp - 0.4 * ti / 0.64) / (ti - 0.4 * ti / 0.64))); else { const u = sm((tp - ti - 0.03) / (0.97 - ti - 0.03)); yaw = ff * u; pit = -ff * 0.26 * u; }
+      const tt = this.m.topT || 0.4 * ti / 0.64; if (tp < tt) yaw = -12 * sm(tp / tt); else if (tp < ti) yaw = -12 * (1 - sm((tp - tt) / (ti - tt))); else { const u = sm((tp - ti - 0.03) / (0.97 - ti - 0.03)); yaw = ff * u; pit = -ff * 0.26 * u; }
       const hq = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), yaw * D2R).multiply(new T.Quaternion().setFromAxisAngle(V(1, 0, 0), pit * D2R)); this._hq = hq;
       this.head.position.copy(hc); this.head.quaternion.copy(hq); this.cap.position.copy(hc.clone().add(V(0, 0.05, 0).applyQuaternion(hq))); this.cap.quaternion.copy(hq); this.visor.position.copy(hc.clone().add(V(0, 0.03, 0.1).applyQuaternion(hq))); this.visor.quaternion.copy(hq);
       // 脚
@@ -336,7 +336,7 @@
     }
     loop(now) {
       if (this.dead || !document.body.contains(this.el)) return; const dt = Math.min((now - this.last) / 1000, 0.1); this.last = now;
-      if (this.playing) { if (this.t >= 1) { this.hold += dt; if (this.hold > 1.2) { this.hold = 0; this.t = 0; } } else this.t = Math.min(1, this.t + dt * this.speed / this.m.dur * 1.0 * 2.2); this.setT(this.t); }
+      if (this.playing) { if (this.t >= 1) { this.hold += dt; if (this.hold > 1.2) { this.hold = 0; this.t = 0; } } else this.t = Math.min(1, this.t + dt * this.speed / this.m.dur); this.setT(this.t); }
       requestAnimationFrame(this.loop);
     }
   }
@@ -413,7 +413,7 @@
     }
     // 数据面板（重心为示意值：由骨盆相对站位的平移估算）
     const wl = f.wt != null ? Math.round(f.wt * 100) : Math.max(5, Math.min(97, Math.round((0.5 + 2 * f.sh) * 100))), dir = v => (v >= 0 ? "背离目标" : "朝向目标");
-    this.hud.innerHTML = `<b>肩转</b> ${Math.abs(Math.round(f.shT))}° <small>${dir(f.shT)}</small>　<b>髋转</b> ${Math.abs(Math.round(f.hipT))}° <small>${dir(f.hipT)}</small>　<b>前倾</b> ${Math.round(f.tilt)}°<br><b>重心</b> 后脚 ${100 - wl}% ｜ 前脚 ${wl}% <span class="g3d-wb"><i style="width:${wl}%"></i></span>`;
+    this.hud.innerHTML = `<b>肩转</b> ${Math.abs(Math.round(f.shT))}° <small>${dir(f.shT)}</small>　<b>髋转</b> ${Math.abs(Math.round(f.hipT))}° <small>${dir(f.hipT)}</small>　<b>前倾</b> ${Math.round(f.tilt)}°<br><b>重心</b> 后脚 ${100 - wl}% ｜ 前脚 ${wl}% <span class="g3d-wb"><i style="width:${wl}%"></i></span>${this.m.tempoNote ? `<br><b>时间</b> ${(s.t * this.m.dur).toFixed(2)} 秒 <small>${this.m.tempoNote}</small>` : ""}`;
   };
 
   window.GolfViewer = { mount(el, key, opts) { return new Viewer(el, key, opts); }, MOTIONS, _Viewer: Viewer };
