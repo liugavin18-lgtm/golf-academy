@@ -116,8 +116,13 @@ function route() {
   const h = location.hash.replace(/^#\/?/, "");
   if (h.startsWith("lesson/")) lesson(h.slice(7)); else if (h === "videos") videos(); else if (h === "tools/score") calc(); else if (h === "password") password(); else home();
 }
-sb.auth.onAuthStateChange(async (_e, s) => {
+sb.auth.onAuthStateChange((_e, s) => {
   gotAuth = true;
-  user = s?.user || null; if (user) await loadProgress(); nav(); route();
+  user = s?.user || null;
+  // 不能在回调里直接 await 其他 Supabase 请求（会互相等待卡死），所以放到下一个事件循环
+  setTimeout(async () => {
+    try { if (user) await loadProgress(); } catch (e) {}
+    nav(); route();
+  }, 0);
 });
 window.addEventListener("hashchange", route);
