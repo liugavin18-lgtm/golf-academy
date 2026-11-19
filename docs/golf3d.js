@@ -127,7 +127,8 @@
 
   /* ---------- 渲染器 ---------- */
   class Viewer {
-    constructor(el, motionKey) {
+    constructor(el, motionKey, opts) {
+      this.polish = !!(opts && opts.polish); this.overlays = true;
       this.el = el; this.key = motionKey; this.m = MOTIONS[motionKey]; this.t = 0; this.playing = true; this.speed = 0.5; this.cam = "face";
       this.drag = null; this.yaw = 0; this.pitch = 0; this.hold = 0;
       this.build();
@@ -139,7 +140,7 @@
         <div class="g3d-ctl"><button class="g3d-play">⏸ 暂停</button>
           <input class="g3d-seek" type="range" min="0" max="1000" value="0">
           <span class="g3d-sp"><button data-s="1">1×</button><button data-s="0.5" class="on">0.5×</button><button data-s="0.25">0.25×</button></span>
-          <span class="g3d-cm"><button data-c="face" class="on">正面</button><button data-c="dtl">背面</button><button data-c="top">俯视</button></span></div>
+          <span class="g3d-cm"><button data-c="face" class="on">正面</button><button data-c="dtl">背面</button><button data-c="top">俯视</button></span>${this.polish ? '<span class="g3d-ov"><button data-ov="1" class="on">辅助线</button></span>' : ""}</div>
         <div class="g3d-chips"></div></div>`;
       this.cv = el.querySelector(".g3d-cv");
       const w = this.cv.clientWidth || 600, h = Math.round(w * 0.62);
@@ -151,7 +152,7 @@
       this.scene.add(new T.HemisphereLight(0xffffff, 0x6aa86f, 0.85));
       const sun = new T.DirectionalLight(0xffffff, 0.9); sun.position.set(-2.5, 5, 3); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
       Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 14 }); this.scene.add(sun);
-      this.buildScene(); this.buildBody(); this.bind(); this.setCam("face"); this.updateChips(); this.setT(0);
+      this.buildScene(); this.buildBody(); if (this.polish) this.upgrade(); this.bind(); this.setCam("face"); this.updateChips(); this.setT(0);
       this.last = performance.now(); this.loop = this.loop.bind(this); requestAnimationFrame(this.loop);
     }
     buildScene() {
@@ -270,7 +271,7 @@
       const phi = this.m.club.phi * D2R, mv = V(0, Math.sin(phi), -Math.cos(phi)), al = s.al, nf = mv.clone().multiplyScalar(-Math.sin(al)).add(V(1, 0, 0).multiplyScalar(Math.cos(al)));
       const yl = s.d.clone().negate(), xl = nf.clone().normalize(), zl = new T.Vector3().crossVectors(xl, yl).normalize(); xl.crossVectors(yl, zl).normalize();
       const head = s.hand.clone().add(s.d.clone().multiplyScalar(s.Lc)); this.chead.position.copy(head.clone().add(yl.clone().multiplyScalar(0.015))); this.chead.setRotationFromMatrix(new T.Matrix4().makeBasis(zl, yl, xl.clone().negate()));
-      this.lastHead = head;
+      this.lastHead = head; if (this.polish) this.polishUpdate(s);
     }
     // 球：击球前静止；击球后飞出/滚动
     updateBall(t) {
@@ -316,6 +317,7 @@
       this.seek.oninput = () => { this.playing = false; this.setPlayBtn(); this.setT(this.seek.value / 1000); };
       el.querySelector(".g3d-sp").onclick = e => { const b = e.target.closest("button"); if (!b) return; this.speed = parseFloat(b.dataset.s); el.querySelectorAll(".g3d-sp button").forEach(x => x.classList.toggle("on", x === b)); };
       el.querySelector(".g3d-cm").onclick = e => { const b = e.target.closest("button"); if (b) this.setCam(b.dataset.c); };
+      const ov = el.querySelector(".g3d-ov"); if (ov) ov.onclick = e => { const b = e.target.closest("button"); if (!b) return; this.overlays = !this.overlays; b.classList.toggle("on", this.overlays); this.setT(this.t); };
       const cv = this.r.domElement; cv.onpointerdown = e => { this.drag = { x: e.clientX, y: e.clientY, yaw: this.yaw, pitch: this.pitch }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; };
       cv.onpointermove = e => { if (!this.drag) return; this.yaw = this.drag.yaw - (e.clientX - this.drag.x) * 0.006; this.pitch = Math.max(-0.7, Math.min(0.7, this.drag.pitch + (e.clientY - this.drag.y) * 0.004)); if (!this.playing) this.render(); };
       cv.onpointerup = () => { this.drag = null; cv.style.cursor = "grab"; };
@@ -327,5 +329,81 @@
       requestAnimationFrame(this.loop);
     }
   }
-  window.GolfViewer = { mount(el, key) { return new Viewer(el, key); }, MOTIONS, _Viewer: Viewer };
+
+  /* ---------- 精修版：更像真人 + 教学辅助线 + 实时数据 ---------- */
+  Viewer.prototype.upgrade = function () {
+    const T = THREE, V = (x, y, z) => new T.Vector3(x, y, z), sc = this.scene;
+    const C = { shirt: 0xf5f7fa, trim: 0x1c3768, skin: 0xe4b995, hair: 0x15100d, shorts: 0x1f3359, sock: 0xffffff, shoe: 0xf2f2f2 };
+    const mat = (c, r = 0.7) => new T.MeshStandardMaterial({ color: c, roughness: r });
+    // 天空渐变 + 雾色
+    const cv = document.createElement("canvas"); cv.width = 16; cv.height = 256; const g = cv.getContext("2d"), gr = g.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0, "#6fb1e6"); gr.addColorStop(0.62, "#cfe8fb"); gr.addColorStop(1, "#eaf5ff"); g.fillStyle = gr; g.fillRect(0, 0, 16, 256); sc.background = new T.CanvasTexture(cv); sc.fog = new T.Fog(0xdcecf8, 12, 30);
+    // 更细腻的草地：噪点 + 割草条纹
+    const gc = document.createElement("canvas"); gc.width = gc.height = 512; const x = gc.getContext("2d");
+    for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? "#6cb872" : "#5fa966"; x.fillRect(0, i * 64, 512, 64); }
+    const id = x.getImageData(0, 0, 512, 512), d = id.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 16; d[i] += n; d[i + 1] += n * 1.2; d[i + 2] += n * 0.6; } x.putImageData(id, 0, 0);
+    const tex = new T.CanvasTexture(gc); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.repeat.set(10, 10); tex.anisotropy = 4;
+    sc.traverse(o => { if (o.isMesh && o.geometry.type === "PlaneGeometry" && o.geometry.parameters.width === 40) { o.material.map = tex; o.material.needsUpdate = true; } });
+    // 远处树林（低多边形）
+    const tg = new T.Group(), trunkM = mat(0x5b4331), leafM = [mat(0x3f8a4e), mat(0x4a9a58), mat(0x378247)]; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 46; i++) {
+      const a = rnd() * Math.PI * 2, r = 9 + rnd() * 9, h = 2.2 + rnd() * 2.2, px = Math.cos(a) * r + 2, pz = Math.sin(a) * r - 1; if (Math.abs(pz + 0.5) < 2.2 && px > -1 && px < 8) continue;
+      const t = new T.Group(); const tr = new T.Mesh(new T.CylinderGeometry(0.08, 0.12, h * 0.4, 6), trunkM); tr.position.y = h * 0.2; t.add(tr);
+      for (let k = 0; k < 3; k++) { const f = new T.Mesh(new T.IcosahedronGeometry(h * (0.34 - k * 0.07), 1), leafM[(i + k) % 3]); f.position.y = h * (0.5 + k * 0.2); f.castShadow = true; t.add(f); }
+      t.position.set(px, 0, pz); tg.add(t);
+    }
+    sc.add(tg);
+    // —— 人物：衣着与比例
+    const P = this.P; this.torso.visible = false;
+    [P.thL, P.thR].forEach(l => { l.cyl.material.color.setHex(C.shorts); }); [P.shL, P.shR].forEach(l => { l.cyl.material.color.setHex(C.skin); });
+    [P.uaL, P.uaR].forEach(l => { l.cyl.material.color.setHex(C.shirt); }); [P.faL, P.faR].forEach(l => { l.cyl.material.color.setHex(C.skin); });
+    this.pelvis.material.color.setHex(C.shorts); this.head.material.color.setHex(C.skin); this.cap.material.color.setHex(0xffffff); this.visor.material.color.setHex(0xffffff);
+    this.chest = this.ell(0.168, 0.2, 0.102, C.shirt); this.abd = this.ell(0.146, 0.17, 0.094, C.shirt); this.hem = this.ell(0.15, 0.05, 0.098, C.trim); this.hem.scale.set(0.152, 0.018, 0.1);
+    this.collar = new T.Mesh(new T.TorusGeometry(0.066, 0.014, 8, 20), mat(C.trim, 0.6)); this.collar.castShadow = true; sc.add(this.collar);
+    this.capL = new T.Mesh(new T.SphereGeometry(0.056, 14, 10), mat(C.shirt)); this.capR = this.capL.clone(); sc.add(this.capL, this.capR);
+    this.hair = this.ell(0.1, 0.108, 0.106, C.hair); this.pony = [0, 1, 2, 3, 4].map(i => { const m = new T.Mesh(new T.SphereGeometry(0.04 - i * 0.0065, 12, 10), mat(C.hair, 0.5)); m.castShadow = true; sc.add(m); return m; });
+    this.sockL = this.limb(0.047, C.sock); this.sockR = this.limb(0.047, C.sock);
+    this.shoeL = this.ell(0.052, 0.04, 0.135, C.shoe); this.shoeR = this.ell(0.052, 0.04, 0.135, C.shoe); this.footL.visible = this.footR.visible = false;
+    this.footBand = [this.ell(0.054, 0.012, 0.04, C.trim), this.ell(0.054, 0.012, 0.04, C.trim)];
+    // —— 更真实的铁杆杆头（刃形挤出）
+    if (this.m.club.kind === "iron" || this.m.club.kind === "wedge") {
+      const sh = new T.Shape(); sh.moveTo(0, 0.004); sh.lineTo(0.092, 0); sh.quadraticCurveTo(0.104, 0.02, 0.094, 0.044); sh.lineTo(0.014, 0.052); sh.quadraticCurveTo(-0.004, 0.03, 0, 0.004);
+      const ge = new T.ExtrudeGeometry(sh, { depth: 0.016, bevelEnabled: true, bevelSize: 0.003, bevelThickness: 0.003, bevelSegments: 2 }); ge.translate(-0.05, -0.03, -0.008);
+      this.chead.geometry.dispose(); this.chead.geometry = ge; this.chead.material = new T.MeshStandardMaterial({ color: 0xc4cbd2, metalness: 0.85, roughness: 0.28 });
+      const hosel = new T.Mesh(new T.CylinderGeometry(0.0095, 0.0095, 0.05, 10), this.chead.material); hosel.position.set(-0.044, 0.05, 0); this.chead.add(hosel);
+    }
+    // —— 辅助线与挥杆平面
+    this.ov = { spine: this.limb(0.009, 0xffc933), sh: this.limb(0.012, 0xff5a5a), hip: this.limb(0.012, 0x4aa8ff) };
+    const phi = this.m.club.phi * Math.PI / 180, mv = V(0, Math.sin(phi), -Math.cos(phi)), b = this.ballPos.clone(), A = b.clone().add(V(-0.45, 0, 0)), B = b.clone().add(V(1.0, 0, 0)), Cc = B.clone().add(mv.clone().multiplyScalar(1.35)), Dd = A.clone().add(mv.clone().multiplyScalar(1.35));
+    const pg = new T.BufferGeometry(); pg.setAttribute("position", new T.Float32BufferAttribute([A, B, Cc, A, Cc, Dd].flatMap(v => [v.x, v.y, v.z]), 3)); pg.computeVertexNormals();
+    this.plane = new T.Mesh(pg, new T.MeshBasicMaterial({ color: 0xffa23e, transparent: true, opacity: 0.11, side: T.DoubleSide, depthWrite: false })); sc.add(this.plane);
+    // —— 数据面板与图例
+    this.hud = document.createElement("div"); this.hud.className = "g3d-hud"; this.cv.style.position = "relative"; this.cv.appendChild(this.hud);
+    this.legend = document.createElement("div"); this.legend.className = "g3d-legend"; this.legend.innerHTML = '<i style="background:#ffc933"></i>脊柱 <i style="background:#ff5a5a"></i>肩线 <i style="background:#4aa8ff"></i>髋线 <i style="background:#ffa23e"></i>挥杆平面'; this.cv.appendChild(this.legend);
+    this.sun = sc.children.find(o => o.isDirectionalLight); if (this.sun) { this.sun.shadow.mapSize.set(2048, 2048); this.sun.intensity = 1.0; }
+  };
+  Viewer.prototype.polishUpdate = function (s) {
+    const T = THREE, V = (x, y, z) => new T.Vector3(x, y, z), up = s.spineUp, f = s.f;
+    this.chest.position.copy(s.N.clone().sub(up.clone().multiplyScalar(0.125))); this.chest.quaternion.copy(s.qChest);
+    this.abd.position.copy(s.P.clone().add(up.clone().multiplyScalar(0.16))); this.abd.quaternion.copy(s.qChest.clone().slerp(s.qHip, 0.55));
+    this.hem.position.copy(s.P.clone().add(up.clone().multiplyScalar(0.06))); this.hem.quaternion.copy(s.qHip);
+    this.collar.position.copy(s.N.clone().add(up.clone().multiplyScalar(0.035))); this.collar.quaternion.copy(s.qChest.clone().multiply(new T.Quaternion().setFromAxisAngle(V(1, 0, 0), Math.PI / 2)));
+    this.capL.position.copy(s.Lsh); this.capR.position.copy(s.Rsh);
+    const hc = this.head.position; this.hair.position.set(hc.x, hc.y + 0.012, hc.z - 0.018);
+    const a0 = V(hc.x, hc.y + 0.005, hc.z - 0.098); this.pony.forEach((m, i) => m.position.set(a0.x, a0.y - 0.027 * i, a0.z - 0.015 * i - 0.006 * i * i));
+    const sock = (limb, knee, ank) => this.setLimb(limb, ank, ank.clone().lerp(knee, 0.3)); sock(this.sockL, s.lg.L.mid, s.lg.L.end); sock(this.sockR, s.lg.R.mid, s.lg.R.end);
+    [[this.shoeL, this.footL, 0], [this.shoeR, this.footR, 1]].forEach(([sh, ft, k]) => { sh.position.copy(ft.position); sh.rotation.copy(ft.rotation); sh.position.y += 0.005; this.footBand[k].position.copy(sh.position).add(V(0, 0.03, 0.02)); this.footBand[k].rotation.copy(sh.rotation); });
+    // 辅助线
+    const on = this.overlays; ["spine", "sh", "hip"].forEach(k => { this.ov[k].visible = on; this.ov[k].cyl.visible = on; this.ov[k].s1.visible = on; this.ov[k].s2.visible = on; }); this.plane.visible = on; if (this.legend) this.legend.style.display = on ? "" : "none";
+    if (on) {
+      this.setLimb(this.ov.spine, s.P.clone().sub(up.clone().multiplyScalar(0.12)), s.N.clone().add(up.clone().multiplyScalar(0.42)));
+      const dx = s.cx.clone(); this.setLimb(this.ov.sh, s.Rsh.clone().sub(dx.clone().multiplyScalar(0.36)), s.Lsh.clone().add(dx.clone().multiplyScalar(0.36)));
+      this.setLimb(this.ov.hip, s.Rhip.clone().sub(s.hx.clone().multiplyScalar(0.38)), s.Lhip.clone().add(s.hx.clone().multiplyScalar(0.38)));
+    }
+    // 数据面板（重心为示意值：由骨盆相对站位的平移估算）
+    const wl = Math.max(5, Math.min(97, Math.round((0.5 + 2 * f.sh) * 100))), dir = v => (v >= 0 ? "背离目标" : "朝向目标");
+    this.hud.innerHTML = `<b>肩转</b> ${Math.abs(Math.round(f.shT))}° <small>${dir(f.shT)}</small>　<b>髋转</b> ${Math.abs(Math.round(f.hipT))}° <small>${dir(f.hipT)}</small>　<b>前倾</b> ${Math.round(f.tilt)}°<br><b>重心</b> 后脚 ${100 - wl}% ｜ 前脚 ${wl}% <span class="g3d-wb"><i style="width:${wl}%"></i></span>`;
+  };
+
+  window.GolfViewer = { mount(el, key, opts) { return new Viewer(el, key, opts); }, MOTIONS, _Viewer: Viewer };
 })();

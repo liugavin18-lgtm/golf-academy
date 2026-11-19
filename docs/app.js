@@ -1,4 +1,5 @@
 const $ = s => document.querySelector(s);
+const VER = ((document.currentScript && document.currentScript.src.match(/v=(\d+)/)) || [])[1] || "";
 const SHOW_VIDEOS = false;   // 视频暂时不做，以后再开：改为 true 即可恢复视频卡片和“视频平台”入口
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LESSONS = LEVELS.flatMap(l => l.lessons);
@@ -207,7 +208,7 @@ function glossaryPage() {
 
 function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
 async function mount3d(l) {
-  try { if (!window.THREE) await loadScript("three.min.js"); if (!window.GolfViewer) await loadScript("golf3d.js"); GolfViewer.mount($("#v3d"), l.a3d); }
+  try { if (!window.THREE) await loadScript("three.min.js?v=" + VER); if (!window.GolfViewer) await loadScript("golf3d.js?v=" + VER); GolfViewer.mount($("#v3d"), l.a3d, { polish: l.id === "swing-basic" }); }
   catch (e) { const c = $("#v3d"); if (c) c.parentNode.innerHTML = l.anim || ""; }
 }
 function coachInit(l) {
@@ -232,7 +233,7 @@ function coachInit(l) {
   imgs[0].classList.add("show"); imgs[0].src = c.views[view][0]; $("#cph").textContent = c.steps[0].l + "　"; $("#ctx").textContent = c.steps[0].n; document.querySelectorAll("#cchips button")[0].classList.add("on"); tick();
   const d3 = $("#d3"); if (d3) d3.addEventListener("toggle", async () => {
     if (!d3.open || d3.dataset.done) return; d3.dataset.done = 1;
-    try { if (!window.THREE) await loadScript("three.min.js"); if (!window.GolfViewer) await loadScript("golf3d.js"); GolfViewer.mount($("#v3d"), l.a3d); } catch (e) { $("#v3d").textContent = "3D 加载失败。"; }
+    try { if (!window.THREE) await loadScript("three.min.js?v=" + VER); if (!window.GolfViewer) await loadScript("golf3d.js?v=" + VER); GolfViewer.mount($("#v3d"), l.a3d); } catch (e) { $("#v3d").textContent = "3D 加载失败。"; }
   });
 }
 

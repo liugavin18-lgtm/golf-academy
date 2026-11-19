@@ -50,3 +50,7 @@ mark{background:#ffe58a;color:#222;border-radius:3px;padding:0 1px}.gl p{margin:
 .cctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}.cchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .coach button{background:var(--bd);color:var(--fg);border:0;border-radius:14px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}.coach button.on{background:var(--g);color:#fff}
 .d3{margin-top:10px}.d3 summary{cursor:pointer}
+.g3d-hud{position:absolute;left:10px;top:10px;background:rgba(10,24,16,.62);color:#fff;border-radius:10px;padding:7px 11px;font-size:13px;line-height:1.7;backdrop-filter:blur(3px);pointer-events:none}
+.g3d-hud small{opacity:.75;font-size:11px}.g3d-wb{display:inline-block;vertical-align:middle;width:70px;height:7px;background:rgba(255,255,255,.28);border-radius:4px;overflow:hidden;margin-left:6px}.g3d-wb i{display:block;height:100%;background:#7ee081}
+.g3d-legend{position:absolute;right:10px;top:10px;background:rgba(10,24,16,.62);color:#fff;border-radius:10px;padding:6px 10px;font-size:12px;pointer-events:none}.g3d-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 8px;vertical-align:middle}.g3d-legend i:first-child{margin-left:0}
+@media (max-width:560px){.g3d-legend{display:none}.g3d-hud{font-size:12px}}
