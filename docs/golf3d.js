@@ -4,7 +4,7 @@
    α：0 = 准备；90 = 上杆腰高(杆水平、杆头在后)；180≈杆竖直；270 = 杆顶(杆指向目标)；负值 = 随挥/收杆。 */
 (function () {
   const T = THREE, V = (x, y, z) => new T.Vector3(x, y, z), D2R = Math.PI / 180;
-  const BODY = { upper: 0.31, fore: 0.35, thigh: 0.44, shin: 0.44, torso: 0.55, hipW: 0.20, shW: 0.39, ankleY: 0.07 };
+  const BODY = { upper: 0.31, fore: 0.38, thigh: 0.44, shin: 0.44, torso: 0.55, hipW: 0.20, shW: 0.39, ankleY: 0.07 };
 
   /* ---------- 数学辅助 ---------- */
   function ik2(a, target, l1, l2, pole) {
@@ -87,14 +87,14 @@
       },
     },
     chip: {
-      name: "切杆 Chip", headFollow: 22, club: { len: 0.74, phi: 66, kind: "wedge" }, tilt0: 36, dur: 1.45, impactT: 0.52, ballLift: 0.021, roll: true, shiftBall: 0.12, runout: true, stance: 0.12,
+      name: "切杆 Chip", headFollow: 22, club: { len: 0.74, phi: 66, kind: "wedge" }, tilt0: 40, dur: 1.45, impactT: 0.52, ballLift: 0.021, roll: true, shiftBall: 0.12, runout: true, stance: 0.12,
       keys: [
-        { t: 0.00, L: "1 准备", sh: 0.07, hipT: -10, shT: -6, tilt: 36, sb: 0, hl: 0, hu: 0, hf: 0, a: 4, w: 1 },
-        { t: 0.30, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 36, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
-        { t: 0.40, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 36, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
-        { t: 0.52, L: "3 击球", sh: 0.08, hipT: -12, shT: -8, tilt: 36, sb: 3, hl: 0, hu: 0, hf: 0, a: 6, w: 1 },
-        { t: 0.72, L: "4 送杆", sh: 0.08, hipT: -16, shT: -20, tilt: 35, sb: 0, hl: 0, hu: 0.05, hf: 0.0, a: -32, w: 0 },
-        { t: 1.00, L: "4 送杆", sh: 0.08, hipT: -16, shT: -20, tilt: 35, sb: 0, hl: 0, hu: 0.05, hf: 0.0, a: -32, w: 0 },
+        { t: 0.00, L: "1 准备", sh: 0.07, hipT: -10, shT: -6, tilt: 40, sb: 0, hl: 0, hu: 0, hf: 0, a: 4, w: 1 },
+        { t: 0.30, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 40, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
+        { t: 0.40, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 40, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
+        { t: 0.52, L: "3 击球", sh: 0.08, hipT: -12, shT: -8, tilt: 40, sb: 3, hl: 0, hu: 0, hf: 0, a: 6, w: 1 },
+        { t: 0.72, L: "4 送杆", sh: 0.08, hipT: -16, shT: -20, tilt: 39, sb: 0, hl: 0, hu: 0.05, hf: 0.0, a: -32, w: 0 },
+        { t: 1.00, L: "4 送杆", sh: 0.08, hipT: -16, shT: -20, tilt: 39, sb: 0, hl: 0, hu: 0.05, hf: 0.0, a: -32, w: 0 },
       ],
       notes: {
         "1 准备": "双脚并拢偏窄、身体略朝目标打开；球靠近右脚；重心约六成在左脚。",
@@ -104,14 +104,14 @@
       },
     },
     pitch: {
-      name: "高抛球 Pitch（9 点钟）", headFollow: 45, club: { len: 0.74, phi: 64, kind: "wedge" }, tilt0: 34, dur: 1.55, impactT: 0.55, ballLift: 0.021, shiftBall: 0.05, stance: 0.16,
+      name: "高抛球 Pitch（9 点钟）", headFollow: 45, club: { len: 0.74, phi: 64, kind: "wedge" }, tilt0: 41, dur: 1.55, impactT: 0.55, ballLift: 0.021, shiftBall: 0.05, stance: 0.16,
       keys: [
-        { t: 0.00, L: "1 准备", sh: 0.04, hipT: -6, shT: -4, tilt: 34, sb: 2, hl: 0, hu: 0, hf: 0, a: 3, w: 1 },
-        { t: 0.30, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 34, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
-        { t: 0.40, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 34, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
-        { t: 0.55, L: "3 击球", sh: 0.08, hipT: -18, shT: -6, tilt: 34, sb: 5, hl: 0, hu: 0, hf: 0, a: 7, w: 1 },
-        { t: 0.75, L: "4 送杆到 3 点", sh: 0.10, hipT: -30, shT: -34, tilt: 32, sb: 3, hl: 0.02, hu: 0.28, hf: 0.04, a: -92, w: 0 },
-        { t: 1.00, L: "4 送杆到 3 点", sh: 0.10, hipT: -30, shT: -34, tilt: 32, sb: 3, hl: 0.02, hu: 0.28, hf: 0.04, a: -92, w: 0 },
+        { t: 0.00, L: "1 准备", sh: 0.04, hipT: -6, shT: -4, tilt: 41, sb: 2, hl: 0, hu: 0, hf: 0, a: 3, w: 1 },
+        { t: 0.30, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 41, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
+        { t: 0.40, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 41, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
+        { t: 0.55, L: "3 击球", sh: 0.08, hipT: -18, shT: -6, tilt: 41, sb: 5, hl: 0, hu: 0, hf: 0, a: 7, w: 1 },
+        { t: 0.75, L: "4 送杆到 3 点", sh: 0.10, hipT: -30, shT: -34, tilt: 39, sb: 3, hl: 0.02, hu: 0.28, hf: 0.04, a: -92, w: 0 },
+        { t: 1.00, L: "4 送杆到 3 点", sh: 0.10, hipT: -30, shT: -34, tilt: 39, sb: 3, hl: 0.02, hu: 0.28, hf: 0.04, a: -92, w: 0 },
       ],
       notes: {
         "1 准备": "站姿略窄，球放中间，手略领先，重心偏左脚。",
