@@ -48,7 +48,7 @@ function lesson(id) {
   const l = LESSONS[i], p = LESSONS[i - 1], n = LESSONS[i + 1], d = done.has(id);
   $("#app").innerHTML = `<p><a href="#/">← 返回课程</a></p><h1>${esc(l.title)}</h1><p class="muted">${esc(l.summary)}</p>
   ${l.anim ? `<div class="card">${l.anim}</div>` : ""}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
-  ${l.videos.length ? "" : ""}<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt=""><span>${esc(v.t)}</span></a>`).join("")}</div>
+  ${l.videos.length ? "" : ""}<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" onerror="this.remove()"></div><span>${esc(v.t)}</span></a>`).join("")}</div>
   <p class="muted">YouTube 在中国大陆需自行解决访问问题；视频由搜索挑选，非本站原创。更多中文教学：</p>
   <ul class="links">${l.links.map(k => `<li><a href="${k.u}" target="_blank" rel="noopener noreferrer">${k.n}搜索</a> <span class="muted">${k.d}</span></li>`).join("")}</ul></div>
   <button class="btn ${d ? "gray" : ""}" id="mk">${d ? "已完成 ✓（点击取消）" : "标记为已学完"}</button>
@@ -116,7 +116,7 @@ function calc() {
 const strip = h => h.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 const LTEXT = LESSONS.map(l => { const t = strip(l.title + " " + l.summary + " " + l.body); return { l, t, tl: t.toLowerCase() }; });
 // 短英文词（≤3 个字母/数字，如 OB、GIR、SI）要求整词匹配，避免 ob 命中 lob
-const has = (hay, w) => (/^[a-z0-9&]{1,3}$/.test(w) ? new RegExp("(^|[^a-z0-9])" + w.replace(/&/g, "\\&") + "($|[^a-z0-9])").test(hay) : hay.includes(w));
+const has = (hay, w) => (/^[a-z0-9&]{1,3}$/.test(w) ? new RegExp("(^|[^a-z0-9])" + w.replace(/&/g, "\\&") + "($|[^a-z0-9])").test(hay) : (hay.includes(w) || hay.replace(/\s+/g, "").includes(w)));
 const lessonById = id => LESSONS.find(l => l.id === id);
 function searchGlossary(q) {
   const ws = q.toLowerCase().split(/\s+/).filter(Boolean); if (!ws.length) return [];
