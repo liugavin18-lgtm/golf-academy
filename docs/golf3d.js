@@ -1,0 +1,331 @@
+/* 高尔夫 3D 动作演示：人体骨架 + 双骨骼 IK + 挥杆平面。
+   坐标：球在原点；目标方向 +x；球手面向 +z（右手持杆者，目标在其左侧）；y 向上。
+   球杆沿“挥杆平面”转动：d(α) = cosα·(−m) + sinα·(−x)，m = (0, sinφ, −cosφ)（平面斜向上、向球手身后）。
+   α：0 = 准备；90 = 上杆腰高(杆水平、杆头在后)；180≈杆竖直；270 = 杆顶(杆指向目标)；负值 = 随挥/收杆。 */
+(function () {
+  const T = THREE, V = (x, y, z) => new T.Vector3(x, y, z), D2R = Math.PI / 180;
+  const BODY = { upper: 0.30, fore: 0.28, thigh: 0.44, shin: 0.44, torso: 0.55, hipW: 0.20, shW: 0.39, ankleY: 0.07 };
+
+  /* ---------- 数学辅助 ---------- */
+  function ik2(a, target, l1, l2, pole) {
+    const ab = target.clone().sub(a); let dist = ab.length();
+    const maxR = (l1 + l2) * 0.999; if (dist > maxR) dist = maxR; if (dist < 0.05) dist = 0.05;
+    const dir = ab.normalize();
+    const x = (l1 * l1 - l2 * l2 + dist * dist) / (2 * dist), h = Math.sqrt(Math.max(l1 * l1 - x * x, 0));
+    let pp = pole.clone().sub(dir.clone().multiplyScalar(pole.dot(dir)));
+    if (pp.lengthSq() < 1e-6) pp = V(0, -1, 0); pp.normalize();
+    const mid = a.clone().add(dir.clone().multiplyScalar(x)).add(pp.multiplyScalar(h));
+    return { mid, end: a.clone().add(dir.multiplyScalar(dist)) };
+  }
+  // Catmull-Rom（标量），关键帧时间不等距
+  function sample(keys, f, t) {
+    const n = keys.length; let i = 0; while (i < n - 2 && t > keys[i + 1].t) i++;
+    const k0 = keys[Math.max(i - 1, 0)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(i + 2, n - 1)];
+    const u = Math.min(Math.max((t - k1.t) / (k2.t - k1.t || 1), 0), 1);
+    const g = k => (f in k ? k[f] : 0), p0 = g(k0), p1 = g(k1), p2 = g(k2), p3 = g(k3);
+    const m1 = (p2 - p0) * 0.5 * ((k2.t - k1.t) / ((k2.t - k0.t) || 1)) * 2 * 0.5, m2 = (p3 - p1) * 0.5 * ((k2.t - k1.t) / ((k3.t - k1.t) || 1)) * 2 * 0.5;
+    const u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * p1 + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2 + (u3 - u2) * m2;
+  }
+
+  /* ---------- 动作定义 ----------
+     关键帧字段：sh 骨盆向目标平移(m)、hipT 髋转、shT 肩转（上杆为正）、tilt 前倾、sb 侧弯（背离目标为正）、
+     hl/hu/hf 双手相对准备姿势的偏移（胸腔坐标：左/上/前）、a 球杆平面角、w 击球对准权重(1=杆头必须在球上)。 */
+  const MOTIONS = {
+    swing: {
+      name: "完整挥杆（7 号铁）", club: { len: 0.85, phi: 62, kind: "iron" }, tilt0: 32, dur: 3.6, impactT: 0.64, ballLift: 0.035,
+      keys: [
+        { t: 0.00, L: "1 准备", sh: 0, hipT: 0, shT: 0, tilt: 32, sb: 3, hl: 0, hu: 0, hf: 0, a: 3, w: 1 },
+        { t: 0.13, L: "2 上杆到腰高", sh: -0.02, hipT: 14, shT: 34, tilt: 32, sb: 4, hl: 0, hu: 0.16, hf: 0.08, a: 90, w: 0 },
+        { t: 0.25, L: "3 手臂平行", sh: -0.045, hipT: 28, shT: 66, tilt: 32, sb: 6, hl: -0.04, hu: 0.74, hf: 0.06, a: 150, w: 0 },
+        { t: 0.40, L: "4 杆顶", sh: -0.07, hipT: 42, shT: 94, tilt: 32, sb: 9, hl: -0.12, hu: 0.86, hf: -0.09, a: 266, w: 0 },
+        { t: 0.47, L: "5 转换", sh: 0.0, hipT: 28, shT: 86, tilt: 32, sb: 9, hl: -0.08, hu: 0.82, hf: -0.05, a: 262, w: 0 },
+        { t: 0.55, L: "6 下杆到腰高", sh: 0.09, hipT: 6, shT: 52, tilt: 33, sb: 9, hl: -0.02, hu: 0.24, hf: 0.11, a: 100, w: 0 },
+        { t: 0.64, L: "7 击球", sh: 0.15, hipT: -32, shT: -8, tilt: 33, sb: 10, hl: 0, hu: 0, hf: 0, a: 8, w: 1 },
+        { t: 0.72, L: "8 送杆", sh: 0.20, hipT: -50, shT: -42, tilt: 30, sb: 8, hl: 0, hu: 0.24, hf: 0.09, a: -88, w: 0 },
+        { t: 0.83, L: "9 随挥", sh: 0.23, hipT: -62, shT: -84, tilt: 24, sb: 2, hl: 0.05, hu: 0.56, hf: 0.01, a: -150, w: 0 },
+        { t: 0.95, L: "10 收杆", sh: 0.25, hipT: -72, shT: -108, tilt: 16, sb: -8, hl: 0, hu: 0.80, hf: -0.09, a: -232, w: 0 },
+        { t: 1.00, L: "10 收杆", sh: 0.25, hipT: -72, shT: -108, tilt: 16, sb: -8, hl: 0, hu: 0.80, hf: -0.09, a: -232, w: 0 },
+      ],
+      notes: {
+        "1 准备": "髋部前倾、背平直、膝微弯；双手自然下垂；球在站位中间偏前。",
+        "2 上杆到腰高": "杆身与地面平行，杆头在手的正后方；肩膀带着手臂一起转，不是单用手拿起来。",
+        "3 手臂平行": "左臂与地面平行，杆身几乎竖直；重心开始移向右脚内侧。",
+        "4 杆顶": "肩转约 90°，髋转约 45°；左臂较直，杆身大致与地面平行并指向目标。",
+        "5 转换": "先让下肢启动：重心移向左脚，髋先转，手臂和杆被‘拉’下来。",
+        "6 下杆到腰高": "杆身再次平行于地面；手腕保持角度；髋已经在转向目标。",
+        "7 击球": "髋打开约 30–35°，重心约六成在左脚；手略领先于球，杆头在草地上先碰球。",
+        "8 送杆": "手臂向目标伸展，胸口转向目标；杆头跟着球线送出去。",
+        "9 随挥": "身体继续转，重心几乎全在左脚；杆开始绕向身后。",
+        "10 收杆": "胸口朝向目标，重心 90% 在左脚，右脚跟抬起，保持平衡站稳 3 秒。",
+      },
+    },
+    driver: {
+      name: "一号木开球", club: { len: 1.03, phi: 54, kind: "driver" }, tilt0: 28, dur: 3.8, impactT: 0.64, ballLift: 0.09, ballX: 0.0,
+      keys: null, base: "swing",
+      tweak: { tiltAdj: -3, sh: -0.04, a: { 90: 92, 150: 154, 266: 274, "-232": -240 } },
+      notes: null,
+    },
+    putt: {
+      name: "推杆（钟摆）", club: { len: 0.76, phi: 70, kind: "putter" }, tilt0: 42, dur: 3.2, impactT: 0.5, ballLift: 0.021, roll: true, stance: 0.13,
+      keys: [
+        { t: 0.00, L: "1 准备", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
+        { t: 0.25, L: "2 后摆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 7, hl: 0, hu: 0.0, hf: 0.0, a: 26, w: 0 },
+        { t: 0.38, L: "2 后摆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 7, hl: 0, hu: 0.0, hf: 0.0, a: 26, w: 0 },
+        { t: 0.50, L: "3 击球", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
+        { t: 0.68, L: "4 送杆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: -7, hl: 0, hu: 0, hf: 0, a: -26, w: 0 },
+        { t: 1.00, L: "4 送杆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: -7, hl: 0, hu: 0, hf: 0, a: -26, w: 0 },
+      ],
+      notes: {
+        "1 准备": "眼睛在球正上方，肩膀、手臂、杆形成稳定的‘五边形’；握压很轻。",
+        "2 后摆": "只用肩膀摆动，手腕不动；后摆的长度决定距离。",
+        "3 击球": "杆面方正地过球，头保持不动。",
+        "4 送杆": "送杆与后摆等长，像钟摆一样，速度不要突然加快或减慢。",
+      },
+    },
+    chip: {
+      name: "切杆 Chip", club: { len: 0.74, phi: 66, kind: "wedge" }, tilt0: 36, dur: 3.2, impactT: 0.52, ballLift: 0.021, roll: true, shiftBall: 0.12, runout: true, stance: 0.12,
+      keys: [
+        { t: 0.00, L: "1 准备", sh: 0.07, hipT: -10, shT: -6, tilt: 36, sb: 0, hl: 0, hu: 0, hf: 0, a: 4, w: 1 },
+        { t: 0.30, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 36, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
+        { t: 0.40, L: "2 后摆", sh: 0.07, hipT: -6, shT: 8, tilt: 36, sb: 4, hl: 0, hu: 0.04, hf: 0.0, a: 34, w: 0 },
+        { t: 0.52, L: "3 击球", sh: 0.08, hipT: -12, shT: -8, tilt: 36, sb: 3, hl: 0, hu: 0, hf: 0, a: 6, w: 1 },
+        { t: 0.72, L: "4 送杆", sh: 0.08, hipT: -16, shT: -20, tilt: 35, sb: 0, hl: 0, hu: 0.05, hf: 0.0, a: -32, w: 0 },
+        { t: 1.00, L: "4 送杆", sh: 0.08, hipT: -16, shT: -20, tilt: 35, sb: 0, hl: 0, hu: 0.05, hf: 0.0, a: -32, w: 0 },
+      ],
+      notes: {
+        "1 准备": "双脚并拢偏窄、身体略朝目标打开；球靠近右脚；重心约六成在左脚。",
+        "2 后摆": "动作很小，像放大的推杆；手腕不翻。",
+        "3 击球": "手领先杆头，向下轻刷过球，重心不变。",
+        "4 送杆": "手臂向目标送出，杆头不超过手；球低飞落地后向洞滚动。",
+      },
+    },
+    pitch: {
+      name: "高抛球 Pitch（9 点钟）", club: { len: 0.74, phi: 64, kind: "wedge" }, tilt0: 34, dur: 3.4, impactT: 0.55, ballLift: 0.021, shiftBall: 0.05, stance: 0.16,
+      keys: [
+        { t: 0.00, L: "1 准备", sh: 0.04, hipT: -6, shT: -4, tilt: 34, sb: 2, hl: 0, hu: 0, hf: 0, a: 3, w: 1 },
+        { t: 0.30, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 34, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
+        { t: 0.40, L: "2 后摆到 9 点", sh: 0.02, hipT: 10, shT: 34, tilt: 34, sb: 4, hl: 0, hu: 0.28, hf: 0.05, a: 92, w: 0 },
+        { t: 0.55, L: "3 击球", sh: 0.08, hipT: -18, shT: -6, tilt: 34, sb: 5, hl: 0, hu: 0, hf: 0, a: 7, w: 1 },
+        { t: 0.75, L: "4 送杆到 3 点", sh: 0.10, hipT: -30, shT: -34, tilt: 32, sb: 3, hl: 0.02, hu: 0.28, hf: 0.04, a: -92, w: 0 },
+        { t: 1.00, L: "4 送杆到 3 点", sh: 0.10, hipT: -30, shT: -34, tilt: 32, sb: 3, hl: 0.02, hu: 0.28, hf: 0.04, a: -92, w: 0 },
+      ],
+      notes: {
+        "1 准备": "站姿略窄，球放中间，手略领先，重心偏左脚。",
+        "2 后摆到 9 点": "双手摆到‘9 点钟’（腰高），用同一个节奏；手腕保持稳定。",
+        "3 击球": "送杆和后摆一样长，千万别在击球处减速。",
+        "4 送杆到 3 点": "对称摆到‘3 点钟’。摆幅大小决定距离，不是用力。",
+      },
+    },
+  };
+  // 复用：driver 在 swing 关键帧上微调
+  (function () {
+    const b = MOTIONS.swing, d = MOTIONS.driver;
+    d.keys = b.keys.map(k => Object.assign({}, k, { tilt: k.tilt + d.tweak.tiltAdj, sh: k.sh + (k.w ? 0 : d.tweak.sh * 0) }));
+    d.notes = Object.assign({}, b.notes, { "1 准备": "球放在左脚内侧，站得更宽；球 tee 高度约半个球露在杆头上方。", "7 击球": "一号木在最低点之后、向上扫过球；重心约六成在左脚。" });
+  })();
+
+  /* ---------- 渲染器 ---------- */
+  class Viewer {
+    constructor(el, motionKey) {
+      this.el = el; this.key = motionKey; this.m = MOTIONS[motionKey]; this.t = 0; this.playing = true; this.speed = 0.5; this.cam = "face";
+      this.drag = null; this.yaw = 0; this.pitch = 0; this.hold = 0;
+      this.build();
+    }
+    build() {
+      const el = this.el, m = this.m;
+      el.innerHTML = `<div class="g3d"><div class="g3d-cv"></div>
+        <div class="g3d-cap"><b class="g3d-ph"></b><span class="g3d-tx"></span></div>
+        <div class="g3d-ctl"><button class="g3d-play">⏸ 暂停</button>
+          <input class="g3d-seek" type="range" min="0" max="1000" value="0">
+          <span class="g3d-sp"><button data-s="1">1×</button><button data-s="0.5" class="on">0.5×</button><button data-s="0.25">0.25×</button></span>
+          <span class="g3d-cm"><button data-c="face" class="on">正面</button><button data-c="dtl">背面</button><button data-c="top">俯视</button></span></div>
+        <div class="g3d-chips"></div></div>`;
+      this.cv = el.querySelector(".g3d-cv");
+      const w = this.cv.clientWidth || 600, h = Math.round(w * 0.62);
+      try { this.r = new T.WebGLRenderer({ antialias: true, alpha: false }); } catch (e) { el.innerHTML = '<p class="muted">此浏览器不支持 3D 演示。</p>'; this.dead = true; return; }
+      this.r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); this.r.setSize(w, h); this.r.shadowMap.enabled = true; this.r.shadowMap.type = T.PCFSoftShadowMap;
+      this.cv.appendChild(this.r.domElement); this.r.domElement.style.cssText = "width:100%;height:auto;border-radius:10px;touch-action:none;cursor:grab";
+      this.scene = new T.Scene(); this.scene.background = new T.Color(0xcfe8f7); this.scene.fog = new T.Fog(0xcfe8f7, 14, 30);
+      this.camera = new T.PerspectiveCamera(32, w / h, 0.1, 60);
+      this.scene.add(new T.HemisphereLight(0xffffff, 0x6aa86f, 0.85));
+      const sun = new T.DirectionalLight(0xffffff, 0.9); sun.position.set(-2.5, 5, 3); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+      Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 14 }); this.scene.add(sun);
+      this.buildScene(); this.buildBody(); this.bind(); this.setCam("face"); this.updateChips(); this.setT(0);
+      this.last = performance.now(); this.loop = this.loop.bind(this); requestAnimationFrame(this.loop);
+    }
+    buildScene() {
+      const g = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshStandardMaterial({ color: 0x69b56f, roughness: 1 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; this.scene.add(g);
+      // 割草条纹
+      const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d");
+      for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? "#6fba75" : "#62ac68"; x.fillRect(0, i * 32, 256, 32); }
+      const tex = new T.CanvasTexture(c); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.repeat.set(6, 6); g.material.map = tex;
+      // 目标线
+      const pts = [V(-1.2, 0.004, 0), V(5.5, 0.004, 0)]; const ln = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineDashedMaterial({ color: 0xffffff, dashSize: 0.12, gapSize: 0.1 })); ln.computeLineDistances(); this.scene.add(ln);
+      const flag = new T.Group(); const pole = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, 1.4, 8), new T.MeshStandardMaterial({ color: 0xeeeeee })); pole.position.y = 0.7; flag.add(pole);
+      const fl = new T.Mesh(new T.PlaneGeometry(0.4, 0.26), new T.MeshStandardMaterial({ color: 0xe74c3c, side: T.DoubleSide })); fl.position.set(0.2, 1.25, 0); flag.add(fl); flag.position.set(6.2, 0, 0); this.scene.add(flag);
+      this.ball = new T.Mesh(new T.SphereGeometry(0.034, 20, 16), new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 })); this.ball.castShadow = true; this.scene.add(this.ball);
+      this.tee = new T.Mesh(new T.CylinderGeometry(0.008, 0.005, 0.06, 8), new T.MeshStandardMaterial({ color: 0xf1d9a0 })); this.tee.visible = this.m.club.kind === "driver"; this.scene.add(this.tee);
+      this.trail = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xffffff })); this.scene.add(this.trail);
+      this.hole = new T.Mesh(new T.CircleGeometry(0.06, 20), new T.MeshBasicMaterial({ color: 0x1b2b1b })); this.hole.rotation.x = -Math.PI / 2; this.hole.position.set(this.m.roll && !this.m.runout ? 1.8 : 3.0, 0.006, 0); this.hole.visible = !!this.m.roll; this.scene.add(this.hole);
+    }
+    limb(r, color) { const g = new T.Group(); const cyl = new T.Mesh(new T.CylinderGeometry(r, r, 1, 14), new T.MeshStandardMaterial({ color, roughness: 0.7 })); cyl.castShadow = true; g.add(cyl);
+      const s1 = new T.Mesh(new T.SphereGeometry(r, 14, 10), cyl.material), s2 = s1.clone(); s1.castShadow = s2.castShadow = true; g.add(s1, s2); g.cyl = cyl; g.s1 = s1; g.s2 = s2; this.scene.add(g); return g; }
+    setLimb(g, a, b) { const d = b.clone().sub(a), l = d.length() || 1e-4; g.cyl.scale.set(1, l, 1); g.cyl.position.copy(a.clone().add(b).multiplyScalar(0.5));
+      g.cyl.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); g.s1.position.copy(a); g.s2.position.copy(b); }
+    ell(rx, ry, rz, color) { const m = new T.Mesh(new T.SphereGeometry(1, 20, 14), new T.MeshStandardMaterial({ color, roughness: 0.75 })); m.scale.set(rx, ry, rz); m.castShadow = true; this.scene.add(m); return m; }
+    buildBody() {
+      const skin = 0xe0b48d, shirt = 0x2457a6, pants = 0xd9d4c6, shoe = 0x333333, cap = 0xf2f2f2, glove = 0xffffff;
+      this.P = { thL: this.limb(0.078, pants), thR: this.limb(0.078, pants), shL: this.limb(0.055, pants), shR: this.limb(0.055, pants),
+        uaL: this.limb(0.052, shirt), uaR: this.limb(0.052, shirt), faL: this.limb(0.042, skin), faR: this.limb(0.042, skin), neck: this.limb(0.05, skin) };
+      this.torso = this.ell(0.17, 0.29, 0.105, shirt); this.pelvis = this.ell(0.16, 0.12, 0.11, pants);
+      this.head = this.ell(0.095, 0.115, 0.1, skin); this.cap = this.ell(0.1, 0.07, 0.105, cap); this.visor = this.ell(0.07, 0.012, 0.09, cap);
+      this.footL = new T.Mesh(new T.BoxGeometry(0.1, 0.07, 0.28), new T.MeshStandardMaterial({ color: shoe })); this.footR = this.footL.clone(); this.footL.castShadow = this.footR.castShadow = true; this.scene.add(this.footL, this.footR);
+      this.hL = new T.Mesh(new T.SphereGeometry(0.05, 14, 10), new T.MeshStandardMaterial({ color: glove })); this.hR = new T.Mesh(new T.SphereGeometry(0.046, 14, 10), new T.MeshStandardMaterial({ color: skin })); this.hL.castShadow = this.hR.castShadow = true; this.scene.add(this.hL, this.hR);
+      this.shaft = this.limb(0.0085, 0xb9bec4); this.grip = this.limb(0.0125, 0x222222);
+      const kind = this.m.club.kind, hs = kind === "putter" ? [0.12, 0.03, 0.05] : kind === "driver" ? [0.115, 0.058, 0.105] : [0.095, 0.05, 0.022];
+      this.chead = new T.Mesh(new T.BoxGeometry(hs[0], hs[1], hs[2]), new T.MeshStandardMaterial({ color: kind === "driver" ? 0x222831 : 0x9aa2aa, metalness: 0.6, roughness: 0.35 })); this.chead.castShadow = true; this.scene.add(this.chead);
+      this.chead.geometry.translate(0, 0, 0);
+      // 初始：由准备姿势求落脚点
+      this.initStance();
+    }
+    // 由准备姿势确定球手位置（让杆头落在球上）与脚的位置
+    initStance() {
+      const m = this.m, k0 = m.keys[0]; this.base = V(0, 0.90, -0.79); this.ballPos = V(0, m.ballLift, 0);
+      if (m.shiftBall) this.base.x = m.shiftBall; // 球更靠近右脚
+      // 迭代两次：让 w=1 时手的位置正好使杆头在球上
+      for (let i = 0; i < 3; i++) { const s = this.solve(0, true); this.base.add(V(0, 0, 0)); this.base.x += s.headErr.x; this.base.z += s.headErr.z; this.base.y += (s.headErr.y) * 0.0; }
+      this.stance = m.stance || 0.19;
+      const s = this.solve(0, true), pl = s.pelvis; const fy = BODY.ankleY / 2;
+      this.ankL = V(pl.x + 0.02 + this.stance * 0.5 * 1.0, fy, pl.z + 0.02); this.ankR = V(pl.x + 0.02 - this.stance * 0.5 * 1.0 - 0.1, fy, pl.z + 0.0);
+      this.ankL.x = pl.x + this.stance * 0.95; this.ankR.x = pl.x - this.stance * 0.95;
+    }
+    frame(t) { const m = this.m, k = f => sample(m.keys, f, t); return { sh: k("sh"), hipT: k("hipT"), shT: k("shT"), tilt: k("tilt"), sb: k("sb"), hl: k("hl"), hu: k("hu"), hf: k("hf"), a: k("a"), w: Math.min(Math.max(k("w"), 0), 1) }; }
+    // 计算姿势：返回各关节位置
+    solve(t, atRest) {
+      const m = this.m, f = this.frame(t), B = BODY, phi = m.club.phi * D2R;
+      const P = this.base.clone(); P.x += f.sh;
+      // 脊柱：前倾 → 侧弯 → 绕脊柱扭转（肩转）
+      const qTilt = new T.Quaternion().setFromAxisAngle(V(1, 0, 0), f.tilt * D2R); const qSide = new T.Quaternion().setFromAxisAngle(V(0, 0, 1), f.sb * D2R);
+      const qLean = qSide.clone().multiply(qTilt); const spineUp = V(0, 1, 0).applyQuaternion(qLean);
+      const qTwist = new T.Quaternion().setFromAxisAngle(spineUp, -f.shT * D2R); const qChest = qTwist.multiply(qLean);
+      const N = P.clone().add(spineUp.clone().multiplyScalar(B.torso));
+      const cx = V(1, 0, 0).applyQuaternion(qChest), cy = V(0, 1, 0).applyQuaternion(qChest), cz = V(0, 0, 1).applyQuaternion(qChest);
+      const Lsh = N.clone().add(cx.clone().multiplyScalar(B.shW / 2)), Rsh = N.clone().sub(cx.clone().multiplyScalar(B.shW / 2));
+      // 髋
+      const qHip = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), -f.hipT * D2R); const hx = V(1, 0, 0).applyQuaternion(qHip), hz = V(0, 0, 1).applyQuaternion(qHip);
+      const Lhip = P.clone().add(hx.clone().multiplyScalar(B.hipW / 2)), Rhip = P.clone().sub(hx.clone().multiplyScalar(B.hipW / 2));
+      // 球杆方向（沿挥杆平面）
+      const al = f.a * D2R, mv = V(0, Math.sin(phi), -Math.cos(phi)), xv = V(1, 0, 0);
+      const d = mv.clone().multiplyScalar(-Math.cos(al)).add(xv.clone().multiplyScalar(-Math.sin(al))).normalize();
+      // 双手：准备姿势时的基准（胸腔坐标），其余帧在其上加偏移
+      if (!this.h0) this.h0 = this.calcH0(); const h0 = this.h0;
+      let hand = N.clone().add(cx.clone().multiplyScalar(h0.l + f.hl)).add(cy.clone().multiplyScalar(h0.u + f.hu)).add(cz.clone().multiplyScalar(h0.f + f.hf));
+      const Lc = m.club.len;
+      // 击球对准：手 = 球 − d·Lc
+      let headErr = V(0, 0, 0);
+      const ballT = this.ballPos.clone(); const need = ballT.clone().sub(d.clone().multiplyScalar(Lc));
+      if (f.w > 0.001) { headErr = need.clone().sub(hand); hand.lerp(need, f.w); }
+      // 手够不到肩时，整体向手靠近（避免手臂被拉长）
+      const reach = (B.upper + B.fore) * 0.985, dd = Lsh.distanceTo(hand);
+      if (dd > reach && !atRest) { const pull = hand.clone().sub(Lsh).normalize().multiplyScalar(dd - reach); P.add(V(pull.x, 0, pull.z)); Lsh.add(pull); Rsh.add(pull); N.add(pull); }
+      const head = hand.clone().add(d.clone().multiplyScalar(Lc));
+      const handR = hand.clone().add(d.clone().multiplyScalar(0.11));
+      // 手臂 IK（肘的指向：向下并略向外）
+      const polL = V(0, -1, 0).add(cx.clone().multiplyScalar(0.55)).add(cz.clone().multiplyScalar(-0.2)), polR = V(0, -1, 0).sub(cx.clone().multiplyScalar(0.55)).add(cz.clone().multiplyScalar(-0.2));
+      const aL = ik2(Lsh, hand, B.upper, B.fore, polL), aR = ik2(Rsh, handR, B.upper, B.fore, polR);
+      // 腿 IK（膝向前并向外）：骨盆高度随膝弯略调整
+      const full = m.club.kind === "iron" || m.club.kind === "driver";
+      const prog = full ? Math.min(Math.max((t - m.impactT) / (1 - m.impactT) * 2.2, 0), 1) : 0, ep = prog * prog * (3 - 2 * prog);
+      const ankRt = (this.ankR || V(P.x - 0.19, 0.035, P.z)).clone(); ankRt.x += 0.17 * ep; ankRt.y += 0.075 * ep;
+      const polK = V(0, 0, 1);
+      const lg = { L: ik2(Lhip, this.ankL || V(P.x + 0.19, 0.035, P.z), B.thigh, B.shin, polK.clone().add(V(0.25, 0, 0))), R: ik2(Rhip, ankRt, B.thigh, B.shin, polK.clone().add(V(-0.25, 0, 0))) };
+      return { ep, ankRt, P, pelvis: P, N, Lsh, Rsh, cx, cy, cz, Lhip, Rhip, qChest, qHip, spineUp, hand, handR, head, d, al, aL, aR, lg, Lc, headErr, f, hx, hz };
+    }
+    calcH0() {
+      // 由准备姿势：手在 y=杆头高度 + Lc·sinφ 处，用胸腔坐标求 (l,u,f)
+      const m = this.m, B = BODY, phi = m.club.phi * D2R, tilt = m.tilt0 * D2R, d0 = V(0, -Math.sin(phi), Math.cos(phi));
+      const handW = this.ballPos.clone().sub(d0.clone().multiplyScalar(m.club.len));
+      const Ny = this.base.y + B.torso * Math.cos(tilt), up = V(0, Math.cos(tilt), Math.sin(tilt)), fw = V(0, -Math.sin(tilt), Math.cos(tilt));
+      const dy = handW.y - Ny, dz = 0.10; // 手在肩前方约 10cm
+      const u = dy * up.y + dz * up.z, ff = dy * fw.y + dz * fw.z; return { l: 0, u, f: ff };
+    }
+    apply(s) {
+      const B = BODY, P = this.P; this.setLimb(P.thL, s.Lhip, s.lg.L.mid); this.setLimb(P.shL, s.lg.L.mid, s.lg.L.end); this.setLimb(P.thR, s.Rhip, s.lg.R.mid); this.setLimb(P.shR, s.lg.R.mid, s.lg.R.end);
+      this.setLimb(P.uaL, s.Lsh, s.aL.mid); this.setLimb(P.faL, s.aL.mid, s.aL.end); this.setLimb(P.uaR, s.Rsh, s.aR.mid); this.setLimb(P.faR, s.aR.mid, s.aR.end);
+      // 躯干与骨盆
+      const mid = s.P.clone().add(s.N).multiplyScalar(0.5); this.torso.position.copy(mid.clone().add(s.cy.clone().multiplyScalar(0.02))); this.torso.quaternion.copy(s.qChest);
+      this.pelvis.position.copy(s.P); this.pelvis.quaternion.copy(s.qHip);
+      // 颈与头：头部保持朝向球，不随肩转
+      const neckTop = s.N.clone().add(s.spineUp.clone().multiplyScalar(0.10)); this.setLimb(P.neck, s.N, neckTop);
+      const hc = s.N.clone().add(s.spineUp.clone().multiplyScalar(0.21)).add(V(0, 0, 0.03)); const look = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), 0);
+      this.head.position.copy(hc); this.head.quaternion.copy(look); this.cap.position.copy(hc.clone().add(V(0, 0.05, 0))); this.cap.quaternion.copy(look); this.visor.position.copy(hc.clone().add(V(0, 0.03, 0.1))); this.visor.quaternion.copy(look);
+      // 脚
+      this.footL.position.set(this.ankL.x, 0.035, this.ankL.z + 0.05); this.footR.position.set(s.ankRt.x, 0.035 + 0.05 * s.ep, s.ankRt.z + 0.05); this.footL.rotation.y = -0.35; this.footR.rotation.y = 0.12; this.footR.rotation.x = 0.85 * s.ep;
+      // 手与球杆
+      this.hL.position.copy(s.aL.end); this.hR.position.copy(s.aR.end);
+      const gripEnd = s.hand.clone().sub(s.d.clone().multiplyScalar(0.09)); this.setLimb(this.shaft, gripEnd, s.hand.clone().add(s.d.clone().multiplyScalar(s.Lc)));
+      this.setLimb(this.grip, gripEnd, s.hand.clone().add(s.d.clone().multiplyScalar(0.14)));
+      // 杆头：基底 y 轴沿杆身（向上），x 轴为杆面法线（保持在平面内）
+      const phi = this.m.club.phi * D2R, mv = V(0, Math.sin(phi), -Math.cos(phi)), al = s.al, nf = mv.clone().multiplyScalar(-Math.sin(al)).add(V(1, 0, 0).multiplyScalar(Math.cos(al)));
+      const yl = s.d.clone().negate(), xl = nf.clone().normalize(), zl = new T.Vector3().crossVectors(xl, yl).normalize(); xl.crossVectors(yl, zl).normalize();
+      const head = s.hand.clone().add(s.d.clone().multiplyScalar(s.Lc)); this.chead.position.copy(head.clone().add(yl.clone().multiplyScalar(0.015))); this.chead.setRotationFromMatrix(new T.Matrix4().makeBasis(zl, yl, xl.clone().negate()));
+      this.lastHead = head;
+    }
+    // 球：击球前静止；击球后飞出/滚动
+    updateBall(t) {
+      const m = this.m, ti = m.impactT, b = this.ball; const p0 = this.ballPos.clone(); this.tee.position.set(p0.x, p0.y / 2 - 0.012, p0.z);
+      if (t < ti) { b.position.copy(p0); this.trail.visible = false; return; }
+      const s = (t - ti) / (1 - ti); this.trail.visible = true; const pts = [];
+      let pos;
+      if (m.roll) { // 推杆/切杆：沿地滚动（切杆先飞一小段）
+        const dist = m.runout ? 3.0 : 1.8, u = Math.min(s * 1.25, 1); const e = 1 - Math.pow(1 - u, 2.2);
+        const x = p0.x + dist * e, fly = m.runout ? 0.9 : 0, y = p0.y + (m.runout && e < 0.34 ? Math.sin(Math.PI * e / 0.34) * 0.32 : 0) + 0; pos = V(x, y, 0); void fly;
+        for (let i = 0; i <= 24; i++) { const ee = 1 - Math.pow(1 - (Math.min(s * 1.25, 1) * i / 24), 2.2); pts.push(V(p0.x + dist * ee, p0.y + (m.runout && ee < 0.34 ? Math.sin(Math.PI * ee / 0.34) * 0.32 : 0), 0)); }
+      } else { // 全挥杆：抛物线（视觉上放慢）
+        const vx = 6.5, vy = 5.2, g = 9.8, tt = s * 1.25; pos = V(p0.x + vx * tt * 0.9, Math.max(p0.y + vy * tt - 0.5 * g * tt * tt, p0.y), 0.0 - 0.15 * tt);
+        for (let i = 0; i <= 24; i++) { const q = tt * i / 24; pts.push(V(p0.x + vx * q * 0.9, Math.max(p0.y + vy * q - 0.5 * g * q * q, p0.y), -0.15 * q)); }
+      }
+      b.position.copy(pos); this.trail.geometry.setFromPoints(pts);
+    }
+    setT(t) { this.t = t; const s = this.solve(t); this.apply(s); this.updateBall(t); this.updateCaption(t); this.seek.value = Math.round(t * 1000); this.render(); }
+    // 说明文字与阶段按钮
+    updateChips() {
+      const m = this.m, ch = this.el.querySelector(".g3d-chips"), seen = new Set(), labels = [];
+      m.keys.forEach(k => { if (!seen.has(k.L)) { seen.add(k.L); labels.push(k); } }); ch.innerHTML = labels.map(k => `<button data-t="${k.t}">${k.L}</button>`).join("");
+      ch.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; this.playing = false; this.setPlayBtn(); this.setT(parseFloat(b.dataset.t)); });
+    }
+    updateCaption(t) {
+      const m = this.m; let best = m.keys[0], bd = 9; m.keys.forEach(k => { const d = Math.abs(k.t - t); if (d < bd) { bd = d; best = k; } });
+      const ph = this.el.querySelector(".g3d-ph"), tx = this.el.querySelector(".g3d-tx"); ph.textContent = best.L + "　"; tx.textContent = (m.notes && m.notes[best.L]) || "";
+      this.el.querySelectorAll(".g3d-chips button").forEach(b => b.classList.toggle("on", b.textContent === best.L));
+    }
+    setPlayBtn() { this.el.querySelector(".g3d-play").textContent = this.playing ? "⏸ 暂停" : "▶ 播放"; }
+    setCam(c) {
+      this.cam = c; this.yaw = 0; this.pitch = 0; const cams = { face: { p: V(0.15, 1.15, 3.6), l: V(0.2, 0.85, -0.5) }, dtl: { p: V(-3.9, 1.2, -0.6), l: V(0.2, 0.85, -0.45) }, top: { p: V(0.1, 4.6, -0.55), l: V(0.1, 0, -0.5) } };
+      this.camSpec = cams[c]; this.camera.position.copy(this.camSpec.p); this.camera.up.set(c === "top" ? 1 : 0, c === "top" ? 0 : 1, 0); this.camera.lookAt(this.camSpec.l);
+      if (c === "top") this.camera.up.set(0, 0, -1), this.camera.lookAt(this.camSpec.l);
+      this.el.querySelectorAll(".g3d-cm button").forEach(b => b.classList.toggle("on", b.dataset.c === c)); if (this.seek) this.render();
+    }
+    orbit() { const sp = this.camSpec, c = sp.l, off = sp.p.clone().sub(c); const qy = new T.Quaternion().setFromAxisAngle(V(0, 1, 0), this.yaw), right = off.clone().cross(V(0, 1, 0)).normalize();
+      const qp = new T.Quaternion().setFromAxisAngle(right, this.pitch); off.applyQuaternion(qy).applyQuaternion(qp); this.camera.position.copy(c.clone().add(off)); this.camera.lookAt(c); if (this.cam === "top") { this.camera.up.set(0, 0, -1); this.camera.lookAt(c); } }
+    render() { this.orbit(); this.r.render(this.scene, this.camera); }
+    bind() {
+      const el = this.el; this.seek = el.querySelector(".g3d-seek");
+      el.querySelector(".g3d-play").onclick = () => { this.playing = !this.playing; if (this.playing && this.t >= 1) this.t = 0; this.setPlayBtn(); };
+      this.seek.oninput = () => { this.playing = false; this.setPlayBtn(); this.setT(this.seek.value / 1000); };
+      el.querySelector(".g3d-sp").onclick = e => { const b = e.target.closest("button"); if (!b) return; this.speed = parseFloat(b.dataset.s); el.querySelectorAll(".g3d-sp button").forEach(x => x.classList.toggle("on", x === b)); };
+      el.querySelector(".g3d-cm").onclick = e => { const b = e.target.closest("button"); if (b) this.setCam(b.dataset.c); };
+      const cv = this.r.domElement; cv.onpointerdown = e => { this.drag = { x: e.clientX, y: e.clientY, yaw: this.yaw, pitch: this.pitch }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; };
+      cv.onpointermove = e => { if (!this.drag) return; this.yaw = this.drag.yaw - (e.clientX - this.drag.x) * 0.006; this.pitch = Math.max(-0.7, Math.min(0.7, this.drag.pitch + (e.clientY - this.drag.y) * 0.004)); if (!this.playing) this.render(); };
+      cv.onpointerup = () => { this.drag = null; cv.style.cursor = "grab"; };
+      if (window.ResizeObserver) new ResizeObserver(() => { const w = this.cv.clientWidth; if (!w) return; const h = Math.round(w * 0.62); this.r.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.render(); }).observe(this.cv);
+    }
+    loop(now) {
+      if (this.dead || !document.body.contains(this.el)) return; const dt = Math.min((now - this.last) / 1000, 0.1); this.last = now;
+      if (this.playing) { if (this.t >= 1) { this.hold += dt; if (this.hold > 1.2) { this.hold = 0; this.t = 0; } } else this.t = Math.min(1, this.t + dt * this.speed / this.m.dur * 1.0 * 2.2); this.setT(this.t); }
+      requestAnimationFrame(this.loop);
+    }
+  }
+  window.GolfViewer = { mount(el, key) { return new Viewer(el, key); }, MOTIONS, _Viewer: Viewer };
+})();

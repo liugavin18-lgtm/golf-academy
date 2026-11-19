@@ -5,12 +5,13 @@ from curriculum import LEVELS
 from glossary import G
 from faq import F
 from animations import BY_LESSON
+A3D = {'swing-basic': 'swing', 'irons': 'swing', 'tempo': 'swing', 'driver': 'driver', 'putting': 'putt', 'chipping': 'chip', 'pitching': 'pitch', 'short-game-adv': 'pitch'}
 from narration import N
 from videos import V
 levels = []
 for lv in LEVELS:
     levels.append(dict(id=lv["id"], name=lv["name"], desc=lv["desc"], lessons=[dict(
-        id=l["id"], title=l["title"], summary=l["summary"], body=l["body"], anim=BY_LESSON.get(l["id"], l["anim"]),
+        id=l["id"], title=l["title"], summary=l["summary"], body=l["body"], anim=BY_LESSON.get(l["id"], l["anim"]), a3d=A3D.get(l["id"], ""),
         audio=("audio/%s.m4a" % l["id"]) if os.path.exists("docs/audio/%s.m4a" % l["id"]) else "", script=N.get(l["id"], ""), minutes=l["minutes"],
         videos=[dict(id=i, t=t) for i, t in V.get(l["id"], [])],
         links=[dict(n=n, u=u, d=d) for n, u, d in (vlinks(l["kw"])[:1] + vlinks(l["kw"])[3:4])]) for l in lv["lessons"]]))

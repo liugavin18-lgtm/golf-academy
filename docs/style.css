@@ -34,3 +34,7 @@ mark{background:#ffe58a;color:#222;border-radius:3px;padding:0 1px}.gl p{margin:
 .thumb{position:relative;aspect-ratio:16/9;border-radius:8px;background:#2b3a31;overflow:hidden}
 .thumb::after{content:"▶";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;text-shadow:0 2px 8px rgba(0,0,0,.5);z-index:2;pointer-events:none}
 .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;aspect-ratio:auto;border-radius:0;background:none}
+.g3d{position:relative}.g3d-cap{padding:8px 4px 2px;font-size:14px;min-height:3.2em}.g3d-ph{color:var(--g)}
+.g3d-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.g3d-seek{flex:1;min-width:120px;padding:0}
+.g3d button{background:var(--bd);color:var(--fg);border:0;border-radius:14px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.g3d button.on{background:var(--g);color:#fff}.g3d-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.g3d-sp,.g3d-cm{display:flex;gap:4px}

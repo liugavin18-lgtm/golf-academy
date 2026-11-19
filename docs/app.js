@@ -47,12 +47,13 @@ function lesson(id) {
   const i = LESSONS.findIndex(l => l.id === id); if (i < 0) return location.hash = "#/";
   const l = LESSONS[i], p = LESSONS[i - 1], n = LESSONS[i + 1], d = done.has(id);
   $("#app").innerHTML = `<p><a href="#/">← 返回课程</a></p><h1>${esc(l.title)}</h1><p class="muted">${esc(l.summary)}</p>
-  ${l.anim ? `<div class="card">${l.anim}</div>` : ""}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
+  ${l.a3d ? `<div class="card"><div id="v3d"></div><p class="muted" style="margin:6px 2px 0">可以暂停、拖动进度、点下面的阶段按钮逐帧看，也可以切换视角，用鼠标拖动旋转。</p></div>` : (l.anim ? `<div class="card">${l.anim}</div>` : "")}${l.audio ? `<div class="card audio"><b>🎧 语音讲解</b> <span class="muted">（晓晓 · 本地 F5 合成）</span><audio controls preload="none" src="${l.audio}" style="width:100%;margin-top:8px"></audio><details><summary class="muted">查看文字稿</summary><p>${esc(l.script)}</p></details></div>` : ""}<div class="card prose">${l.body}</div>
   ${l.videos.length ? "" : ""}<div class="card"><h3>📺 精选视频（YouTube）</h3>${l.videos.length ? "" : '<p class="muted">本节暂无精选视频，可用下面的平台搜索。</p>'}<div class="vgrid">${l.videos.map(v => `<a class="vcard" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer"><div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" onerror="this.remove()"></div><span>${esc(v.t)}</span></a>`).join("")}</div>
   <p class="muted">YouTube 在中国大陆需自行解决访问问题；视频由搜索挑选，非本站原创。更多中文教学：</p>
   <ul class="links">${l.links.map(k => `<li><a href="${k.u}" target="_blank" rel="noopener noreferrer">${k.n}搜索</a> <span class="muted">${k.d}</span></li>`).join("")}</ul></div>
   <button class="btn ${d ? "gray" : ""}" id="mk">${d ? "已完成 ✓（点击取消）" : "标记为已学完"}</button>
   <p class="pager">${p ? `<a href="#/lesson/${p.id}">← ${esc(p.title)}</a>` : ""}${n ? `<a style="float:right" href="#/lesson/${n.id}">${esc(n.title)} →</a>` : ""}</p>`;
+  if (l.a3d) { try { if (window.GolfViewer && window.THREE) GolfViewer.mount($("#v3d"), l.a3d); else throw 0; } catch (e) { $("#v3d").parentNode.innerHTML = l.anim || ""; } }
   $("#mk").onclick = async () => {
     if (d) await sb.from("progress").delete().eq("lesson", id); else await sb.from("progress").insert({ lesson: id });
     await loadProgress(); lesson(id);
