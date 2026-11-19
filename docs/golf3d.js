@@ -70,20 +70,19 @@
       notes: null,
     },
     putt: {
-      name: "推杆（钟摆）", headFollow: 6, club: { len: 0.76, phi: 70, kind: "putter" }, tilt0: 42, dur: 1.45, impactT: 0.5, ballLift: 0.021, roll: true, stance: 0.13,
+      name: "推杆（肩摆钟摆）", headFollow: 6, club: { len: 0.76, phi: 70, kind: "putter" }, tilt0: 42, dur: 1.3, topT: 0.4615, impactT: 0.6923, ballLift: 0.021, roll: true, stance: 0.13, tempoNote: "后摆 0.60 秒 : 前摆 0.30 秒 ≈ 2 : 1（Blast Motion 巡回赛范围 0.57–0.63 / 0.29–0.31）",
       keys: [
-        { t: 0.00, L: "1 准备", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
-        { t: 0.25, L: "2 后摆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 7, hl: 0, hu: 0.0, hf: 0.0, a: 26, w: 0 },
-        { t: 0.38, L: "2 后摆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 7, hl: 0, hu: 0.0, hf: 0.0, a: 26, w: 0 },
-        { t: 0.50, L: "3 击球", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
-        { t: 0.68, L: "4 送杆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: -7, hl: 0, hu: 0, hf: 0, a: -26, w: 0 },
-        { t: 1.00, L: "4 送杆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: -7, hl: 0, hu: 0, hf: 0, a: -26, w: 0 },
+        { t: 0.0000, L: "1 准备", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, wt: 0.5, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
+        { t: 0.4615, L: "2 后摆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, wt: 0.5, hl: 0, hu: 0.0, hf: 0.0, a: 26, w: 0 },
+        { t: 0.6923, L: "3 击球", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, wt: 0.5, hl: 0, hu: 0, hf: 0, a: 0, w: 1 },
+        { t: 0.9231, L: "4 送杆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, wt: 0.5, hl: 0, hu: 0, hf: 0, a: -26, w: 0 },
+        { t: 1.0000, L: "4 送杆", sh: 0, hipT: 0, shT: 0, tilt: 42, sb: 0, wt: 0.5, hl: 0, hu: 0, hf: 0, a: -26, w: 0 },
       ],
       notes: {
         "1 准备": "眼睛在球正上方，肩膀、手臂、杆形成稳定的‘五边形’；握压很轻。",
-        "2 后摆": "只用肩膀摆动，手腕不动；后摆的长度决定距离。",
+        "2 后摆": "只用肩膀摆动，手腕不动；后摆的长度决定距离，约 0.6 秒。",
         "3 击球": "杆面方正地过球，头保持不动。",
-        "4 送杆": "送杆与后摆等长，像钟摆一样，速度不要突然加快或减慢。",
+        "4 送杆": "送杆长度与后摆相近；前摆时间约是后摆的一半（2:1），顺势加速通过球，不要在击球处突然发力或减速。",
       },
     },
     chip: {

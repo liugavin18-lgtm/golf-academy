@@ -108,8 +108,11 @@ NEW1 = [  # (插在哪一课之后, 课程)
 <tr><td>传统（反重叠）</td><td>左手在上，右手在下，左手食指搭在右手手指上</td><td>最常见，通用</td></tr>
 <tr><td>交叉手（Cross-hand）</td><td>左手在下，右手在上</td><td>稳定左肩和左手腕，适合推杆易拉左者</td></tr>
 <tr><td>爪式（Claw）</td><td>右手像爪子一样搭在握把上</td><td>减少手腕动作，适合手抖者</td></tr></table>
-<h3>推杆轨迹</h3><ul><li>杆面角度决定<b>约 80–90% 的方向</b>，所以击球时杆面必须方正；</li><li>轨迹：直线式（straight back, straight through）或<b>微弧式</b>（杆头轻微向内再回到目标线），按推杆杆颈类型决定；</li><li><b>杆面中心击球</b>，每次都在同一个点；</li><li>球位：稍靠<b>左脚前方</b>，眼睛在球的正上方或略内侧。</li></ul>""" +
- D("<b>门练习</b>：在球两侧各放一个 tee，间距比杆头略宽，推出去不碰 tee；<b>硬币练习</b>：在球前 30 厘米放一枚硬币，球要从硬币上滚过；<b>手机录像</b>：从后方与侧面拍摄，检查肩膀是否摆动。"),
+<h3>推杆轨迹</h3><ul><li>杆面角度决定<b>约 80–83% 的起始方向</b>，所以击球时杆面必须方正；</li><li>轨迹：直线式（straight back, straight through）或<b>微弧式</b>（杆头轻微向内再回到目标线），按推杆杆颈类型决定；</li><li><b>杆面中心击球</b>，每次都在同一个点；</li><li>球位：稍靠<b>左脚前方</b>，眼睛在球的正上方或略内侧。</li></ul>""" +
+ D("<b>门练习</b>：在球两侧各放一个 tee，间距比杆头略宽，推出去不碰 tee；<b>硬币练习</b>：在球前 30 厘米放一枚硬币，球要从硬币上滚过；<b>手机录像</b>：从后方与侧面拍摄，检查肩膀是否摆动。") +
+ """<details class="src"><summary><b>数据来源与可信度（点开看）</b></summary>
+<p><b>有出处的：</b></p><ul><li>杆面角度对方向的主导作用：<a href="https://typeset.io/pdf/the-stroke-has-only-a-minor-influence-on-direction-1tvbs9ieny.pdf" target="_blank" rel="noopener noreferrer">引述 Pelz《Putting Bible》(2000) 的文章</a>；<a href="https://www.scienceandmotion.com/download/docs/fundamentals/The Fundamentals of Putting2.pdf" target="_blank" rel="noopener noreferrer">Science&Motion SAM PuttLab 资料</a>。</li><li>节奏 2:1 见上一课的来源（<a href="https://support.trackmangolf.com/hc/en-us/articles/39762233521691-Parameters-Tempo-Putting" target="_blank" rel="noopener noreferrer">TrackMan：Tempo (Putting)</a>）。</li></ul>
+<p><b>只有教练共识、我没找到量化文献的：</b>直线式与微弧式的占比、哪种握法更好：没有找到可靠的对比数据，是教练的经验分类。球位稍靠左脚前方也是教练共识，不是测出来的。</p></details>""",
  "高尔夫 推杆 握法 反握 爪式 轨迹", None, 8)),
 
 ("putting-stroke", L("putting-speed", "推杆速度控制与三推预防", "三推多半是速度问题，不是方向问题",
@@ -118,14 +121,20 @@ NEW1 = [  # (插在哪一课之后, 课程)
 <h3>长推（Lag Putt）</h3><ul><li>目标：<b>停在洞边 1 米圈内</b>，不追求进洞；</li><li>用<b>摆幅</b>控制距离，而不是用手的力量；</li><li>用 ‘走路步数’ 测距：步幅 ≈ 1 米，转换成摆幅。</li></ul>
 <h3>赛前校准</h3><p>下场前在练习果岭推 5–10 分钟：先推长，建立<b>当天的果岭速度</b>（雨天慢，晴天快）。</p>""" +
  D("<b>阶梯练习</b>：5、10、15 米各推 5 球，目标是都停在洞后 1 米内；<b>三推预防</b>：10 个长推，每次计数——停在 1 米圈内才算成功。") +
- T("<b>下坡推杆</b>：球速要极慢，目标是球在洞口‘爬’进去；<b>上坡推杆</b>：果断，推过洞。"),
+ T("<b>下坡推杆</b>：球速要极慢，目标是球在洞口‘爬’进去；<b>上坡推杆</b>：果断，推过洞。") +
+ """<details class="src"><summary><b>数据来源与可信度（点开看）</b></summary>
+<p><b>有出处的：</b></p><ul><li>摆幅改变距离、节奏保持一致：见 <a href="https://blastmotion.com/?p=122337" target="_blank" rel="noopener noreferrer">Blast Motion 推杆参数（巡回赛范围）</a>（节奏 1.8–2.2:1，不论距离）。</li></ul>
+<p><b>只有教练共识、我没找到量化文献的：</b>“速度错 20% 比方向偏 1° 后果更严重”“让球停在洞后约 40 厘米”“雨天慢、晴天快”：这些是教练经验与常用口诀，我没找到量化文献，请当作经验参考。</p></details>""",
  "高尔夫 推杆 速度 距离控制 三推 lag putt", None, 8)),
 
 ("putting-speed", L("short-putt", "短推例行程序（1.5 米内）", "短推进洞靠的是例行程序，不是运气",
  """<p>职业球手在 1 米（3 英尺）以内几乎每次都进，而业余球手常常紧张。关键是<b>稳定的例行程序</b>：</p>
 <ol><li><b>读线</b>：站在球后，看球到洞的坡度，决定落点；</li><li><b>瞄准</b>：杆面先对准落点，然后摆脚；</li><li><b>1–2 次练习挥杆</b>：节奏与击球一样；</li><li><b>看洞一次，再看球</b>；</li><li><b>击球</b>，保持头不动，<b>听球进洞的声音</b>，而不是抬头看。</li></ol>
 <h3>心理小技巧</h3><ul><li>把<b>短推当作一个‘瞄准点’的游戏</b>：选一个点，推过那个点；</li><li>呼吸：吸气，呼气时击球；</li><li>推完不要看，直到球落洞。</li></ul>""" +
- D("<b>环绕练习（Around the world）</b>：以洞为中心，在 1 米半径的圆上放 8 个球，连续推进，进一个下一个，失败就重来。"),
+ D("<b>环绕练习（Around the world）</b>：以洞为中心，在 1 米半径的圆上放 8 个球，连续推进，进一个下一个，失败就重来。") +
+ """<details class="src"><summary><b>数据来源与可信度（点开看）</b></summary>
+<p><b>有出处的：</b></p><ul><li>同一节奏、同一套例行程序：节奏数据见 <a href="https://blastmotion.com/?p=122337" target="_blank" rel="noopener noreferrer">Blast Motion 推杆参数（巡回赛范围）</a>。</li></ul>
+<p><b>只有教练共识、我没找到量化文献的：</b>“职业球手 1 米内几乎每次都进”“呼气时击球”等说法没有找到出处，属于教练共识或经验。</p></details>""",
  "高尔夫 短推 例行程序 推杆 心理", None, 6)),
 
 ("chipping", L("chip-choice", "切杆怎么选：Bump & Run、Pitch、Lob", "决策树：选杆、选落点、选风险",
