@@ -15,3 +15,10 @@ os.makedirs("docs", exist_ok=True)
 open("docs/data.js", "w").write("window.LEVELS=" + json.dumps(levels, ensure_ascii=False) +
     ";\nwindow.GLOSSARY=" + json.dumps([dict(cn=a, en=e, d=d, al=al, l=l) for a, e, d, al, l in G], ensure_ascii=False) + ";\nwindow.FAQ=" + json.dumps([dict(c=c, q=q, a=a, k=k, l=l) for c, q, a, k, l in F], ensure_ascii=False) + ";\nwindow.PLATFORMS=" + json.dumps([dict(n=n, d=d) for n, _, d in PLATFORMS], ensure_ascii=False) + ";")
 print("lessons:", sum(len(l["lessons"]) for l in levels))
+
+# 给 index.html 的资源加版本号，避免浏览器缓存旧脚本
+import re, time
+_p = "docs/index.html"; _s = open(_p).read(); _v = time.strftime("%Y%m%d%H%M%S")
+_s = re.sub(r'<script src="(config|data|app)\.js[^"]*">', lambda m: f'<script src="{m.group(1)}.js?v={_v}">', _s)
+_s = re.sub(r'<link rel="stylesheet" href="style\.css[^"]*">', f'<link rel="stylesheet" href="style.css?v={_v}">', _s)
+open(_p, "w").write(_s)
